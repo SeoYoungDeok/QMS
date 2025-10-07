@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinLengthValidator, MaxLengthValidator
-from ulid import ULID
+import ulid
 
 
 class Schedule(models.Model):
@@ -96,7 +96,7 @@ class Schedule(models.Model):
     def save(self, *args, **kwargs):
         # ULID 생성 (최초 생성 시에만)
         if not self.schedule_uid:
-            self.schedule_uid = str(ULID())
+            self.schedule_uid = str(ulid.new())
         
         # end_date가 없으면 start_date로 설정
         if not self.end_date:

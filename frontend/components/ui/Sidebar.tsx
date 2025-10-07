@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import Modal from './Modal'
+import AlertModal from './AlertModal'
 import Input from './Input'
 import Button from './Button'
 import { userAPI } from '@/lib/api'
@@ -36,6 +37,11 @@ export default function Sidebar() {
   })
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
   const [formLoading, setFormLoading] = useState(false)
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean
+    message: string
+    type?: 'info' | 'warning' | 'error' | 'success'
+  }>({ isOpen: false, message: '' })
 
   const menuItems: MenuItem[] = [
     {
@@ -154,7 +160,11 @@ export default function Sidebar() {
     if (!user) return
 
     if (user.role_level < item.minRole) {
-      alert(`${item.name} 기능은 권한이 필요합니다.`)
+      setAlertModal({
+        isOpen: true,
+        message: `${item.name} 기능은 권한이 필요합니다.`,
+        type: 'warning'
+      })
       return
     }
 
@@ -428,6 +438,14 @@ export default function Sidebar() {
 
       {/* Toast 알림 */}
       <Toaster position="top-right" richColors />
+
+      {/* 경고 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
 
       {/* 프로필 수정 모달 */}
       <Modal

@@ -7,6 +7,7 @@ import Sidebar from '@/components/ui/Sidebar'
 import { stickyNotesAPI, tagsAPI, StickyNoteListItem, Tag } from '@/lib/api'
 import StickyNoteCard from '@/components/ui/StickyNoteCard'
 import Modal from '@/components/ui/Modal'
+import AlertModal from '@/components/ui/AlertModal'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 
@@ -46,6 +47,13 @@ export default function StickyNotesPage() {
     noteId?: number
     isBulk?: boolean
   }>({ isOpen: false })
+
+  // 경고 모달
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean
+    message: string
+    type?: 'info' | 'warning' | 'error' | 'success'
+  }>({ isOpen: false, message: '' })
 
   // 인증 체크
   useEffect(() => {
@@ -115,7 +123,11 @@ export default function StickyNotesPage() {
   // 새 메모 추가
   const handleAddNote = async () => {
     if (!user || user.role_level < 1) {
-      alert('게스트는 메모를 생성할 수 없습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '게스트는 메모를 생성할 수 없습니다.',
+        type: 'warning'
+      })
       return
     }
 
@@ -136,7 +148,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Create error:', error)
-      alert('메모 생성에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '메모 생성에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -147,7 +163,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Update error:', error)
-      alert('메모 수정에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '메모 수정에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -166,7 +186,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Delete error:', error)
-      alert('메모 삭제에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '메모 삭제에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -224,7 +248,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Bulk delete error:', error)
-      alert('일괄 삭제에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '일괄 삭제에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -280,7 +308,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Tag create error:', error)
-      alert('태그 생성에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '태그 생성에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -291,7 +323,11 @@ export default function StickyNotesPage() {
       loadData()
     } catch (error: any) {
       console.error('Tag delete error:', error)
-      alert('태그 삭제에 실패했습니다.')
+      setAlertModal({
+        isOpen: true,
+        message: '태그 삭제에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
 
@@ -620,6 +656,14 @@ export default function StickyNotesPage() {
           </div>
         </div>
       </Modal>
+
+      {/* 경고 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
 
       {/* 태그 관리 모달 */}
       <Modal

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Modal from './Modal'
+import AlertModal from './AlertModal'
 import Input from './Input'
 import Select from './Select'
 import Button from './Button'
@@ -38,6 +39,11 @@ const CustomerComplaintModal: React.FC<CustomerComplaintModalProps> = ({
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean
+    message: string
+    type?: 'info' | 'warning' | 'error' | 'success'
+  }>({ isOpen: false, message: '' })
 
   // 수정 모드일 때 데이터 채우기
   useEffect(() => {
@@ -139,7 +145,11 @@ const CustomerComplaintModal: React.FC<CustomerComplaintModalProps> = ({
     } catch (error: any) {
       console.error('고객 불만 저장 오류:', error)
       const errorMessage = error.response?.data?.error || '저장 중 오류가 발생했습니다.'
-      alert(errorMessage)
+      setAlertModal({
+        isOpen: true,
+        message: errorMessage,
+        type: 'error'
+      })
     } finally {
       setLoading(false)
     }
@@ -151,12 +161,20 @@ const CustomerComplaintModal: React.FC<CustomerComplaintModalProps> = ({
     : '0.00'
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={complaint ? '고객 불만 수정' : '고객 불만 등록'}
-      size="xl"
-    >
+    <>
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
+
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={complaint ? '고객 불만 수정' : '고객 불만 등록'}
+        size="xl"
+      >
       <div className="space-y-4">
         {/* 기본 정보 */}
         <div className="grid grid-cols-2 gap-4">
@@ -304,6 +322,7 @@ const CustomerComplaintModal: React.FC<CustomerComplaintModalProps> = ({
         </div>
       </div>
     </Modal>
+    </>
   )
 }
 

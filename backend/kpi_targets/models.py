@@ -1,4 +1,4 @@
-from ulid import ULID
+import ulid
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
@@ -85,7 +85,7 @@ class KPITarget(models.Model):
     def save(self, *args, **kwargs):
         # ULID 생성 (최초 생성 시에만)
         if not self.kpi_uid:
-            self.kpi_uid = str(ULID())
+            self.kpi_uid = str(ulid.new())
         
         super().save(*args, **kwargs)
     
