@@ -50,9 +50,8 @@ export default function DataDownloadPage() {
         
         // 각 연도의 12개월 생성 (12월부터 1월 순서로)
         for (let month = 12; month >= 1; month--) {
-          // 현재 연도의 경우 모든 달 표시 (미래 달도 포함)
-          // 과거 연도의 경우 모든 달 표시
-          const isFuture = (year === currentYear && month > currentMonth)
+          // 미래 연도이거나, 현재 연도의 미래 달인 경우 비활성화
+          const isFuture = (year > currentYear) || (year === currentYear && month > currentMonth)
           
           months.push({
             year,
