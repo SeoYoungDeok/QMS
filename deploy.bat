@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >null
 REM QMS 배포 스크립트
 REM 초기 배포 및 업데이트 시 사용
 
