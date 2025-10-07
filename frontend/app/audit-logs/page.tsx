@@ -469,7 +469,7 @@ export default function AuditLogsPage() {
                           pages.push(
                             <Button
                               key={i}
-                              variant={i === currentPage ? 'default' : 'outline'}
+                              variant={i === currentPage ? 'primary' : 'outline'}
                               size="sm"
                               onClick={() => handlePageChange(i)}
                               className="h-8 min-w-8 px-3"
