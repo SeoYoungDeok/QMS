@@ -56,7 +56,6 @@ if __name__ == '__main__':
     
     create_admin_user()
     print()
-    create_test_users()
     
     print()
     print("완료! 생성된 계정들:")
