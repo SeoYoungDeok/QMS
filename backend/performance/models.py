@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.core.validators import MinValueValidator
-from ulid import ULID
+import ulid
 
 class Vendor(models.Model):
     """업체명 관리 모델"""
@@ -101,7 +101,7 @@ class PerformanceRecord(models.Model):
     def save(self, *args, **kwargs):
         # ULID 생성 (최초 생성 시에만)
         if not self.record_uid:
-            self.record_uid = str(ULID())
+            self.record_uid = str(ulid.new())
         
         # 요일 자동 계산
         weekday_map = {

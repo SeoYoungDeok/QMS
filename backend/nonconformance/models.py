@@ -1,4 +1,4 @@
-from ulid import ULID
+import ulid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -204,7 +204,7 @@ class Nonconformance(models.Model):
     def save(self, *args, **kwargs):
         # ULID 생성 (최초 생성 시에만)
         if not self.ncr_uid:
-            self.ncr_uid = str(ULID())
+            self.ncr_uid = str(ulid.new())
         
         # 합계 자동 계산
         self.total_amount = self.defect_qty * self.unit_price * self.weight_factor

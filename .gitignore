@@ -20,6 +20,7 @@ env/
 # Database
 *.sqlite3
 *.db
+backend/db.sqlite3*
 
 # Django
 *.log
@@ -37,6 +38,9 @@ out/
 .npm
 .pnp
 .pnp.js
+
+# backend
+backend/staticfiles
 
 # Frontend build
 frontend/build/
@@ -83,3 +87,4 @@ yarn-error.log*
 
 # Test data (테스트용 CSV는 예외적으로 포함 가능하지만 실제 데이터는 제외)
 # test_*.csv 파일은 현재 포함되어 있지만, 실제 데이터 포함 시 주의
+null

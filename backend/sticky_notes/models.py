@@ -1,11 +1,11 @@
 from django.db import models
 from accounts.models import User
-from ulid import ULID
+import ulid
 
 
 def generate_ulid():
     """ULID 생성 함수"""
-    return str(ULID())
+    return str(ulid.new())
 
 
 class Tag(models.Model):

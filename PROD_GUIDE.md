@@ -91,6 +91,11 @@ create_admin.bat
 
 ---
 
+### 2.5 시드 데이터 생성
+```cmd
+uv run manage.py seed_defect_data
+```
+
 ## 3. 서버 실행
 
 ### 3.1 프로덕션 서버 시작
