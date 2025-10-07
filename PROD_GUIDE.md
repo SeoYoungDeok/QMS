@@ -195,10 +195,11 @@ start_server.bat
 
 ### 8.1 로그 확인
 
-**Gunicorn 로그**:
+**Uvicorn 로그**:
+Uvicorn은 콘솔에 직접 로그를 출력합니다. 필요시 리다이렉션으로 파일 저장:
 ```cmd
-type backend\logs\gunicorn_access.log
-type backend\logs\gunicorn_error.log
+# 콘솔에서 로그 확인
+# 또는 start_server.bat 실행 시 자동으로 콘솔에 표시됨
 ```
 
 ### 8.2 시스템 상태
@@ -281,11 +282,11 @@ exit()
 
 ## 11. 프로덕션 설정
 
-### Gunicorn 설정
-- **위치**: `backend/gunicorn_config.py`
-- **워커 수**: CPU 코어 * 2 + 1
-- **타임아웃**: 120초
-- **로그**: `backend/logs/`
+### Uvicorn 설정 (ASGI)
+- **위치**: `backend/uvicorn_config.py`
+- **워커 수**: 기본 4개 (조정 가능)
+- **타임아웃**: Keep-alive 5초
+- **특징**: Windows, Linux, macOS 모두 지원
 
 ### SQLite WAL 모드
 - **자동 활성화**: `deploy.bat` 실행 시
@@ -300,7 +301,7 @@ exit()
 ### WhiteNoise
 - Static 파일 자동 압축 (gzip)
 - 캐싱 헤더 자동 설정
-- Gunicorn에서 효율적 서빙
+- Uvicorn/ASGI에서 효율적 서빙
 
 ---
 
@@ -325,7 +326,7 @@ uv run python manage.py collectstatic --noinput
 
 ### ✅ 반드시 지켜야 할 사항
 
-1. **프로덕션에서는 Gunicorn 사용** (`start_server.bat`)
+1. **프로덕션에서는 Uvicorn 사용** (`start_server.bat`)
 2. **DEBUG=False 설정**
 3. **정기적인 백업**
 4. **WAL 파일 삭제 금지**
@@ -362,7 +363,7 @@ uv run python manage.py collectstatic --noinput
 
 ### 서버 다운
 
-1. 로그 확인: `backend\logs\gunicorn_error.log`
+1. 로그 확인: Uvicorn 콘솔 창 확인
 2. 서버 재시작: `stop_server.bat` → `start_server.bat`
 3. 문제 지속 시: 백업에서 복원
 

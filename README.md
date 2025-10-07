@@ -191,7 +191,7 @@ qms/
 │   ├── sticky_notes/          # 포스트잇
 │   ├── audit/                 # 감사 로그
 │   ├── backend/settings.py    # Django 설정
-│   ├── gunicorn_config.py     # Gunicorn 설정
+│   ├── uvicorn_config.py      # Uvicorn 설정 (ASGI)
 │   └── enable_wal.py          # WAL 모드 스크립트
 │
 ├── frontend/                   # Next.js 프론트엔드
@@ -251,7 +251,7 @@ qms/
 
 ### 긴급 상황
 
-1. 로그 확인: `backend/logs/gunicorn_error.log`
+1. 로그 확인: Uvicorn 콘솔 창 확인
 2. 서버 재시작: `stop_server.bat` → `start_server.bat`
 3. 백업 복원: `backups/` 폴더에서 최신 백업 사용
 

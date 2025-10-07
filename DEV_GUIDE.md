@@ -274,7 +274,7 @@ qms/
 │   ├── audit/                   # 감사 로그
 │   ├── backend/settings.py      # Django 설정
 │   ├── manage.py                # Django 관리
-│   ├── gunicorn_config.py       # Gunicorn 설정
+│   ├── uvicorn_config.py        # Uvicorn 설정 (ASGI)
 │   └── enable_wal.py            # WAL 모드 스크립트
 │
 ├── frontend/                     # Next.js 프론트엔드
