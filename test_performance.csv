@@ -1,0 +1,4 @@
+type,date,vendor,product_name,control_no,quantity,producer
+inhouse,2025-01-20,ABC정밀,하우징-123,QMS-2025-000123,120,사내
+incoming,2025-01-20,XYZ가공,브래킷-9,QMS-2025-000124,60,외주업체1
+inhouse,,잘못된업체,품명테스트,,abc,생산처테스트

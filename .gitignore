@@ -1,0 +1,85 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# Environment variables (민감한 정보 포함)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Database
+*.sqlite3
+*.db
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+/static_root
+
+# Node
+node_modules/
+.next/
+out/
+.npm
+.pnp
+.pnp.js
+
+# Frontend build
+frontend/build/
+frontend/.next/
+frontend/out/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Deployment
+/deployment/
+*.pem
+*.key
+*.crt
+
+# User uploads (실제 운영 데이터)
+/backend/media/
+
+# Test data (테스트용 CSV는 예외적으로 포함 가능하지만 실제 데이터는 제외)
+# test_*.csv 파일은 현재 포함되어 있지만, 실제 데이터 포함 시 주의
