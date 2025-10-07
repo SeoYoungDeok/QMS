@@ -6,10 +6,10 @@ echo QMS 서버 중지
 echo =====================================
 echo.
 
-echo Gunicorn, Node.js 프로세스를 종료합니다...
+echo Uvicorn, Node.js 프로세스를 종료합니다...
 echo.
 
-REM Gunicorn 프로세스 종료 (포트 8000)
+REM Uvicorn 프로세스 종료 (포트 8000)
 for /f "tokens=5" %%a in ('netstat -aon ^| find ":8000" ^| find "LISTENING"') do (
     echo Backend 서버 종료 중 (PID: %%a)
     taskkill /F /PID %%a >nul 2>&1

@@ -75,7 +75,7 @@ deploy.bat
 ```
 
 이 스크립트가 자동으로 수행:
-1. Python 의존성 설치 (Gunicorn, WhiteNoise 포함)
+1. Python 의존성 설치 (Uvicorn, WhiteNoise 포함)
 2. 데이터베이스 마이그레이션
 3. SQLite WAL 모드 활성화
 4. Static 파일 수집
@@ -100,8 +100,10 @@ start_server.bat
 ```
 
 2개의 창이 열립니다:
-- **Backend (Gunicorn)**: 포트 8000
+- **Backend (Uvicorn ASGI)**: 포트 8000
 - **Frontend (Next.js)**: 포트 3000
+
+**참고**: Uvicorn은 Windows, Linux, macOS 모두에서 작동합니다.
 
 ### 3.2 서버 중지
 

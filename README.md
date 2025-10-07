@@ -83,7 +83,7 @@ QMS는 제조 및 서비스 기업의 품질 관리를 위한 종합 시스템�
 ### Backend
 - **Framework**: Django 5.2.5
 - **API**: Django REST Framework 3.16.1
-- **WSGI**: Gunicorn 23.0+ (프로덕션)
+- **ASGI Server**: Uvicorn 0.34+ (프로덕션, Windows 호환)
 - **인증**: JWT (Simple JWT 5.5.1)
 - **데이터베이스**: SQLite3 (WAL 모드)
 - **Static**: WhiteNoise 6.8+
@@ -164,7 +164,7 @@ start_server.bat
 
 | 스크립트 | 용도 |
 |---------|------|
-| `start_server.bat` | 서버 시작 (Gunicorn + Next.js) |
+| `start_server.bat` | 서버 시작 (Uvicorn + Next.js) |
 | `stop_server.bat` | 서버 중지 |
 
 ### 유지보수
