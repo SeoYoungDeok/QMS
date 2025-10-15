@@ -48,7 +48,8 @@ export default function CustomerComplaintPage() {
     defect_type_code: '',
     cause_code: '',
     complaint_content: '',
-    action_content: ''
+    action_content: '',
+    action_completed: false
   })
 
   // 폼 에러 상태
@@ -88,12 +89,31 @@ export default function CustomerComplaintPage() {
     }
   }, [isAuthenticated])
 
-  // 탭 변경 시 목록 로드
+  // 탭 변경 시 목록 로드 또는 CCR NO 자동 채우기
   useEffect(() => {
     if (activeTab === 'list' && isAuthenticated) {
       loadComplaints()
+    } else if (activeTab === 'create' && isAuthenticated) {
+      // 등록 탭으로 전환 시 CCR NO 자동 채우기
+      loadNextCcrNo()
     }
   }, [activeTab, isAuthenticated])
+
+  // 다음 CCR NO 로드
+  const loadNextCcrNo = async () => {
+    try {
+      const response = await customerComplaintAPI.getNextCcrNo()
+      if (response.data.ok && response.data.data.next_ccr_no) {
+        setCreateForm(prev => ({
+          ...prev,
+          ccr_no: response.data.data.next_ccr_no
+        }))
+      }
+    } catch (error) {
+      console.error('다음 CCR NO 로드 실패:', error)
+      // 실패해도 사용자가 직접 입력할 수 있으므로 에러 토스트는 표시하지 않음
+    }
+  }
 
   // 코드 테이블 로드
   const loadCodeTables = async () => {
@@ -127,6 +147,27 @@ export default function CustomerComplaintPage() {
       console.error('Load vendors error:', error)
       setVendors([])
     }
+  }
+
+  // 6M 카테고리 배지 색상 매핑 함수 (부적합 페이지와 동일하게)
+  const getSixMBadgeClass = (category: string) => {
+    const mapping: Record<string, string> = {
+      'Material': 'badge-material',       // Material - 빨강
+      'Machine': 'badge-machine',         // Machine - 주황
+      'Man': 'badge-man',                 // Man - 초록
+      'Method': 'badge-method',           // Method - 파랑
+      'Measurement': 'badge-measurement', // Measurement - 보라
+      'Environment': 'badge-environment', // Environment - 청록
+      'Other': 'badge-other',             // Other - 회색
+      // 코드 형식도 지원 (M1, M2 등)
+      'M1': 'badge-material',
+      'M2': 'badge-machine',
+      'M3': 'badge-man',
+      'M4': 'badge-method',
+      'M5': 'badge-measurement',
+      'M6': 'badge-environment',
+    }
+    return mapping[category] || 'badge-other'
   }
 
   // 입력 값 유효성 검사 함수
@@ -216,9 +257,13 @@ export default function CustomerComplaintPage() {
         defect_type_code: '',
         cause_code: '',
         complaint_content: '',
-        action_content: ''
+        action_content: '',
+        action_completed: false
       })
       setValidationErrors({})
+      
+      // 다음 CCR NO 자동 채우기
+      loadNextCcrNo()
       
     } catch (err: any) {
       if (err.response?.data) {
@@ -293,7 +338,8 @@ export default function CustomerComplaintPage() {
         defect_type_code: data.defect_type_code,
         cause_code: data.cause_code,
         complaint_content: data.complaint_content || '',
-        action_content: data.action_content || ''
+        action_content: data.action_content || '',
+        action_completed: data.action_completed || false
       })
       setEditValidationErrors({})
       setSelectedComplaint(data)
@@ -660,6 +706,29 @@ export default function CustomerComplaintPage() {
                     />
                   </div>
 
+                  {/* 조치 완료 여부 토글 */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">조치 완료 여부</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCreateForm(prev => ({ ...prev, action_completed: !prev.action_completed }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:ring-offset-2 ${
+                          createForm.action_completed ? 'bg-green-600' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            createForm.action_completed ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className={`text-sm font-medium ${createForm.action_completed ? 'text-green-700' : 'text-gray-600'}`}>
+                        {createForm.action_completed ? '조치완료' : '조치대기'}
+                      </span>
+                    </div>
+                  </div>
+
                   {/* 제출 버튼 */}
                   <div className="flex justify-end">
                     <Button
@@ -848,12 +917,12 @@ export default function CustomerComplaintPage() {
                                   ₩{Math.round(item.total_amount || 0).toLocaleString()}
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
-                                  <Badge variant="info">
+                                  <span className={getSixMBadgeClass(item.cause_category)} style={{display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: '500', borderRadius: '0px'}}>
                                     {item.cause_category_display}
-                                  </Badge>
+                                  </span>
                                 </td>
                                 <td className="px-3 py-3 whitespace-nowrap text-center">
-                                  {item.action_content ? (
+                                  {item.action_completed ? (
                                     <Badge variant="success">조치완료</Badge>
                                   ) : (
                                     <Badge variant="warning">조치대기</Badge>
@@ -984,26 +1053,40 @@ export default function CustomerComplaintPage() {
                   <label className="text-xs font-medium text-gray-500 uppercase">불량 유형</label>
                   <p className="text-base text-gray-900 mt-1">{selectedComplaint.defect_type_code} - {selectedComplaint.defect_type_name}</p>
                 </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm">
-                  <label className="text-xs font-medium text-gray-500 uppercase">발생 원인 (6M)</label>
-                  <p className="text-base text-gray-900 mt-1">{selectedComplaint.cause_code} - {selectedComplaint.cause_name}</p>
-                  <Badge variant="info" className="mt-2">{selectedComplaint.cause_category_display}</Badge>
-                </div>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <label className="text-xs font-medium text-gray-500 uppercase">발생 원인 (6M)</label>
+                    <p className="text-base text-gray-900 mt-1">{selectedComplaint.cause_code} - {selectedComplaint.cause_name}</p>
+                    <span className={getSixMBadgeClass(selectedComplaint.cause_category)} style={{display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: '500', borderRadius: '9999px', marginTop: '0.5rem'}}>
+                      {selectedComplaint.cause_category_display}
+                    </span>
+                  </div>
               </div>
             </div>
 
-            {/* 조치 내용 */}
-            {selectedComplaint.action_content && (
+              {/* 조치 정보 */}
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-100">
-                <h3 className="text-sm font-semibold text-purple-900 mb-4 flex items-center">
-                  <span className="w-1 h-4 bg-purple-600 mr-2 rounded"></span>
-                  조치 내용
+                <h3 className="text-sm font-semibold text-purple-900 mb-4 flex items-center justify-between">
+                  <span className="flex items-center">
+                    <span className="w-1 h-4 bg-purple-600 mr-2 rounded"></span>
+                    조치 정보
+                  </span>
+                  {selectedComplaint.action_completed ? (
+                    <Badge variant="success">조치완료</Badge>
+                  ) : (
+                    <Badge variant="warning">조치대기</Badge>
+                  )}
                 </h3>
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedComplaint.action_content}</p>
-                </div>
+                {selectedComplaint.action_content && (
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedComplaint.action_content}</p>
+                  </div>
+                )}
+                {!selectedComplaint.action_content && (
+                  <div className="bg-white p-4 rounded-lg shadow-sm text-center">
+                    <p className="text-sm text-gray-500">조치 내용이 없습니다.</p>
+                  </div>
+                )}
               </div>
-            )}
 
             {/* 불만 내용 */}
             {selectedComplaint.complaint_content && (
@@ -1223,6 +1306,29 @@ export default function CustomerComplaintPage() {
               />
             </div>
 
+            {/* 조치 완료 여부 토글 */}
+            <div>
+              <label className="block text-sm font-medium mb-2">조치 완료 여부</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditForm(prev => prev ? { ...prev, action_completed: !prev.action_completed } : null)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:ring-offset-2 ${
+                    editForm.action_completed ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      editForm.action_completed ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm font-medium ${editForm.action_completed ? 'text-green-700' : 'text-gray-600'}`}>
+                  {editForm.action_completed ? '조치완료' : '조치대기'}
+                </span>
+              </div>
+            </div>
+
             {/* 버튼 */}
             <div className="flex justify-end gap-2">
               <Button
@@ -1301,7 +1407,7 @@ export default function CustomerComplaintPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">조치여부</span>
-                  {deleteTarget.action_content ? (
+                  {deleteTarget.action_completed ? (
                     <Badge variant="success">조치완료</Badge>
                   ) : (
                     <Badge variant="warning">조치대기</Badge>

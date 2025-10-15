@@ -19,7 +19,7 @@ class CustomerComplaintSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'ccr_uid', 'occurrence_date', 'ccr_no',
             'vendor', 'product_name', 'defect_qty', 'unit_price',
-            'total_amount', 'complaint_content', 'action_content',
+            'total_amount', 'complaint_content', 'action_content', 'action_completed',
             'defect_type_code', 'defect_type_name', 'cause_code', 'cause_name',
             'cause_category', 'cause_category_display',
             'created_by', 'created_by_name', 'created_at', 'updated_at'
@@ -107,8 +107,8 @@ class CustomerComplaintListSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source='created_by.name', read_only=True)
     defect_type_name = serializers.CharField(source='defect_type_code.name', read_only=True)
     cause_name = serializers.CharField(source='cause_code.name', read_only=True)
+    cause_category = serializers.CharField(source='cause_code.category', read_only=True)
     cause_category_display = serializers.CharField(source='cause_code.get_category_display', read_only=True)
-    has_action = serializers.SerializerMethodField()
     
     class Meta:
         model = CustomerComplaint
@@ -116,13 +116,9 @@ class CustomerComplaintListSerializer(serializers.ModelSerializer):
             'id', 'ccr_uid', 'occurrence_date', 'ccr_no',
             'vendor', 'product_name', 'defect_qty', 'unit_price',
             'total_amount', 'defect_type_code', 'defect_type_name',
-            'cause_code', 'cause_name', 'cause_category_display',
-            'action_content', 'has_action', 'created_by', 'created_by_name', 'created_at'
+            'cause_code', 'cause_name', 'cause_category', 'cause_category_display',
+            'action_content', 'action_completed', 'created_by', 'created_by_name', 'created_at'
         ]
-    
-    def get_has_action(self, obj):
-        """조치 여부"""
-        return bool(obj.action_content and obj.action_content.strip())
 
 
 class CustomerComplaintCreateSerializer(serializers.ModelSerializer):
@@ -132,7 +128,7 @@ class CustomerComplaintCreateSerializer(serializers.ModelSerializer):
         model = CustomerComplaint
         fields = [
             'occurrence_date', 'ccr_no', 'vendor', 'product_name',
-            'defect_qty', 'unit_price', 'complaint_content', 'action_content',
+            'defect_qty', 'unit_price', 'complaint_content', 'action_content', 'action_completed',
             'defect_type_code', 'cause_code'
         ]
     

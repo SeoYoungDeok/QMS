@@ -595,6 +595,7 @@ export interface CustomerComplaint {
   total_amount: number
   complaint_content: string
   action_content?: string
+  action_completed: boolean
   defect_type_code: string
   defect_type_name: string
   cause_code: string
@@ -605,7 +606,6 @@ export interface CustomerComplaint {
   created_by_name: string
   created_at: string
   updated_at: string
-  has_action?: boolean
 }
 
 export interface CustomerComplaintCreateRequest {
@@ -617,6 +617,7 @@ export interface CustomerComplaintCreateRequest {
   unit_price: string | number
   complaint_content: string
   action_content?: string
+  action_completed?: boolean
   defect_type_code: string
   cause_code: string
 }
@@ -654,6 +655,10 @@ export const customerComplaintAPI = {
   // 고객 불만 삭제
   deleteComplaint: (id: number) =>
     api.delete(`/customer-complaints/${id}/delete/`),
+  
+  // 다음 CCR NO 조회
+  getNextCcrNo: () =>
+    api.get<{ok: boolean, data: {next_ccr_no: string}}>('/customer-complaints/next-ccr-no/'),
   
   // CSV 다운로드
   exportCSV: (year: number, month: number) =>

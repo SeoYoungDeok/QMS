@@ -253,6 +253,54 @@ class CustomerComplaintDeleteView(generics.DestroyAPIView):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def get_next_ccr_no(request):
+    """다음 CCR NO 생성 API
+    
+    Returns:
+        { "next_ccr_no": "CCR-yyyy-nnn" }
+    """
+    from datetime import datetime
+    from django.db.models import Max
+    
+    try:
+        current_year = datetime.now().year
+        year_prefix = f"CCR-{current_year}-"
+        
+        # 현재 연도의 마지막 CCR NO 조회
+        last_complaint = CustomerComplaint.objects.filter(
+            ccr_no__startswith=year_prefix
+        ).aggregate(Max('ccr_no'))
+        
+        last_ccr_no = last_complaint['ccr_no__max']
+        
+        if last_ccr_no:
+            # 마지막 번호에서 순번 추출
+            try:
+                last_number = int(last_ccr_no.split('-')[-1])
+                next_number = last_number + 1
+            except (ValueError, IndexError):
+                next_number = 1
+        else:
+            next_number = 1
+        
+        # CCR-yyyy-nnn 형식으로 생성
+        next_ccr_no = f"CCR-{current_year}-{next_number:03d}"
+        
+        return Response({
+            'ok': True,
+            'data': {
+                'next_ccr_no': next_ccr_no
+            }
+        })
+    except Exception as e:
+        return Response(
+            {'ok': False, 'error': f'다음 CCR NO 생성 중 오류가 발생했습니다: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def customer_complaint_csv_export(request):
     """고객 불만 데이터 CSV 다운로드 API
     
@@ -330,7 +378,7 @@ def customer_complaint_csv_export(request):
             complaint.cause_code.get_category_display() if complaint.cause_code else '',
             complaint.complaint_content or '',
             complaint.action_content or '',
-            '조치완료' if complaint.action_content else '조치대기',
+            '조치완료' if complaint.action_completed else '조치대기',
             complaint.created_by.name if complaint.created_by else '',
             complaint.created_at.strftime('%Y-%m-%d %H:%M:%S')
         ])

@@ -53,6 +53,9 @@ class CustomerComplaint(models.Model):
     # 조치 내용 (선택)
     action_content = models.TextField(null=True, blank=True, verbose_name='조치 내용')
     
+    # 조치 완료 여부
+    action_completed = models.BooleanField(default=False, verbose_name='조치 완료 여부')
+    
     # 불량유형 코드 (외래키)
     defect_type_code = models.ForeignKey(
         'nonconformance.DefectType',

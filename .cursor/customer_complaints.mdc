@@ -10,6 +10,9 @@ alwaysApply: false
 - `/<int:id>/` - 고객 불만 상세 조회 (GET)
 - `/<int:id>/update/` - 고객 불만 수정 (PUT/PATCH, 실무자=본인만/관리자=전체)
 - `/<int:id>/delete/` - 고객 불만 삭제 (DELETE, 실무자=본인만/관리자=전체, 물리삭제)
+- `/next-ccr-no/` - 다음 CCR NO 조회 (GET, 인증 필요)
+  - Response: `{"ok": true, "data": {"next_ccr_no": "CCR-yyyy-nnn"}}`
+  - 형식: CCR-연도-순번 (예: CCR-2025-001)
 - `/export/` - 월별 고객 불만 데이터 CSV 다운로드 (GET, 인증 필요)
   - Query Parameters: `year` (연도), `month` (월)
   - Response: CSV 파일 (UTF-8 BOM 포함)
@@ -19,7 +22,7 @@ alwaysApply: false
 **CustomerComplaint 모델**: 고객 불만(CCR) 본문 테이블
 - `ccr_uid` (CharField, 26자, 고유) - ULID 기반 비즈니스 식별자
 - `occurrence_date` (DateField) - 발생일
-- `ccr_no` (CharField, 50자) - CCR 번호
+- `ccr_no` (CharField, 50자) - CCR 번호 (형식: CCR-yyyy-nnn)
 - `vendor` (CharField, 100자) - 업체명
 - `product_name` (CharField, 100자) - 품명
 - `defect_qty` (PositiveIntegerField) - 부적합 수량
@@ -27,6 +30,7 @@ alwaysApply: false
 - `total_amount` (DecimalField, 자동계산) - 합계 (defect_qty × unit_price)
 - `complaint_content` (TextField, 필수) - 고객 불만 내용
 - `action_content` (TextField, 선택) - 조치 내용
+- `action_completed` (BooleanField, 기본값=False) - 조치 완료 여부
 - `defect_type_code` (ForeignKey to DefectType) - 불량유형 코드 (nonconformance 앱 재사용)
 - `cause_code` (ForeignKey to DefectCause) - 발생원인 코드 (nonconformance 앱 재사용)
 - `created_by` (ForeignKey to User) - 작성자
@@ -39,9 +43,14 @@ alwaysApply: false
 - `CustomerComplaintCreateView` - 고객 불만 등록 (실무자 이상 권한 필요)
 - `CustomerComplaintUpdateView` - 고객 불만 수정 (실무자=본인만, 관리자=전체 권한)
 - `CustomerComplaintDeleteView` - 고객 불만 물리 삭제 (실무자=본인만, 관리자=전체 권한)
+- `get_next_ccr_no()` - 다음 CCR NO 자동 생성 (인증 필요)
+  - 현재 연도 기준으로 마지막 순번 + 1
+  - 형식: CCR-yyyy-nnn (예: CCR-2025-001)
+  - 연도가 바뀌면 순번 1부터 시작
 - `customer_complaint_csv_export()` - 월별 고객 불만 데이터 CSV 다운로드 (인증 필요)
   - 년도/월 기준으로 데이터 조회
   - CSV 헤더: CCR NO, 발생일, 업체명, 품명, 수량, 단가, 합계금액, 불량 유형, 발생 원인, 6M 카테고리, 불만 내용, 조치 내용, 조치 여부, 등록자, 등록일시
+  - 조치 여부는 `action_completed` 필드 기준 (조치완료/조치대기)
   - UTF-8 BOM 포함 (Excel 한글 호환)
   - 감사 로그 기록 (EXPORT_CUSTOMER_COMPLAINT)
 
@@ -50,27 +59,44 @@ alwaysApply: false
 - 모든 필드 포함
 - `complaint_content` 필수 검증
 - `action_content` 선택 (조치 내용은 나중에 입력 가능)
+- `action_completed` 필드 포함 (조치 완료 여부)
+- `cause_category` 필드 포함 (6M 카테고리 코드)
 - 불량유형/발생원인 코드 유효성 검증
 - 감사 로그 자동 기록 (생성/수정 시)
 
 **CustomerComplaintListSerializer**: 고객 불만 목록용 (최적화)
 - 주요 필드만 포함
-- `has_action` 필드 추가 (조치 여부)
+- `action_completed` 필드 포함 (조치 완료 여부)
+- `cause_category` 필드 포함 (6M 카테고리 코드: Material, Machine, Man, Method, Measurement, Environment, Other)
+- `cause_category_display` 필드 포함 (6M 카테고리 한글명)
 - `created_by`, `action_content` 포함
 - `select_related` 최적화
 
 **CustomerComplaintCreateSerializer**: 고객 불만 생성 전용
 - 입력 필드만 포함
+- `action_completed` 필드 포함 (선택, 기본값=False)
 - 자동 생성 필드 제외
 - 필수 필드 검증
 
 ## 주요 기능
 - **권한 관리**: 실무자는 본인 작성 데이터만, 관리자는 전체 데이터 관리 가능
 - **자동 계산**: 합계 = 부적합수량 × 단가
+- **CCR NO 자동 생성**: 등록 탭 진입 시 자동으로 다음 번호 채우기 (CCR-yyyy-nnn 형식, 사용자 수정 가능)
 - **감사 로그**: 모든 생성/수정/삭제 작업 자동 기록
 - **필터링**: 날짜, 업체명, 불량유형, 6M 카테고리, 조치여부 등 다양한 필터 지원
 - **페이지네이션**: 기본 20건씩 조회
-- **조치 관리**: 조치 내용 선택 입력, 조치 여부 표시
+- **조치 관리**: 
+  - 조치 내용 선택 입력
+  - 조치 완료 여부 토글 버튼 (등록/수정 시)
+  - 조치 내용과 무관하게 토글 상태로 조치 완료/대기 표시
+- **6M 배지 색상**: 부적합 관리 페이지와 동일한 색상 체계
+  - Material (소재) - 빨강
+  - Machine (설비) - 주황
+  - Man (작업자) - 초록
+  - Method (방법) - 파랑
+  - Measurement (측정) - 보라
+  - Environment (환경) - 청록
+  - Other (기타) - 회색
 
 ## 데이터베이스 인덱스
 - `idx_ccr_date` - occurrence_date
@@ -88,6 +114,10 @@ alwaysApply: false
 ## 비즈니스 규칙
 - 고객 불만 내용(`complaint_content`)은 필수 입력
 - 조치 내용(`action_content`)은 선택 입력 (나중에 추가 가능)
+- 조치 완료 여부(`action_completed`)는 토글 버튼으로 관리 (조치 내용과 독립적)
+- CCR NO는 자동 생성되지만 사용자가 수정 가능
+- CCR NO 형식: CCR-연도-순번 (예: CCR-2025-001)
+- 연도가 바뀌면 순번은 1부터 다시 시작
 - 부적합 수량은 1 이상
 - 단가는 0 이상
 - 합계는 서버에서 자동 계산 (클라이언트 표시용)
@@ -95,3 +125,4 @@ alwaysApply: false
 - 관리자는 모든 고객 불만 수정/삭제 가능
 - 삭제는 물리 삭제 (데이터베이스에서 완전 제거)
 - 모든 변경사항은 감사 로그에 기록
+- 6M 카테고리는 발생원인 코드(`cause_code`)에서 자동으로 가져옴
