@@ -6,11 +6,13 @@ alwaysApply: false
 
 ## 라우트 (URL)
 - `/kpis/` - KPI 통합 데이터 조회 (GET, 불량율/F-COST/고객불만)
-- `/charts/defect-rate-trend/` - 월별 불량율 추이 (GET, 최근 12개월)
-- `/charts/f-cost-trend/` - 월별 F-COST 추이 (GET, 최근 12개월)
-- `/charts/complaints-trend/` - 월별 고객 불만 건수 추이 (GET, 최근 12개월)
+- `/charts/defect-rate-trend/` - 월별 불량율 추이 (GET, 최근 12개월 + 연도별 YTD 데이터)
+- `/charts/f-cost-trend/` - 월별 F-COST 추이 (GET, 최근 12개월 + 연도별 YTD 데이터)
+- `/charts/complaints-trend/` - 월별 고객 불만 건수 추이 (GET, 최근 12개월 + 연도별 YTD 데이터)
 - `/charts/defect-type-distribution/` - 불량 유형별 분포 (GET, 건수/금액)
 - `/charts/defect-cause-distribution/` - 발생 원인별(6M) 분포 (GET, 건수/금액)
+- `/charts/defect-type-ytd-distribution/` - 불량 유형별 연간 누적 분포 (GET, 1월~선택된 월)
+- `/charts/defect-cause-ytd-distribution/` - 발생 원인별 연간 누적 분포 (GET, 1월~선택된 월)
 - `/sparkline/` - 스파크라인 데이터 (GET, KPI별 12개월)
 - `/schedules/upcoming/` - 향후 14일 품질 일정 (GET)
 
@@ -39,11 +41,13 @@ alwaysApply: false
 
 ## 서비스 함수
 - `dashboard_kpis()` - KPI 통합 데이터 (불량율, F-COST, 고객불만)
-- `defect_rate_trend()` - 월별 불량율 추이 (12개월)
-- `f_cost_trend()` - 월별 F-COST 추이 (12개월)
-- `complaints_trend()` - 월별 고객 불만 건수 추이 (12개월)
-- `defect_type_distribution()` - 불량 유형별 분포 (건수/금액)
-- `defect_cause_distribution()` - 발생 원인별(6M) 분포 (건수/금액)
+- `defect_rate_trend()` - 월별 불량율 추이 (12개월 + YTD 데이터)
+- `f_cost_trend()` - 월별 F-COST 추이 (12개월 + YTD 데이터)
+- `complaints_trend()` - 월별 고객 불만 건수 추이 (12개월 + YTD 데이터)
+- `defect_type_distribution()` - 불량 유형별 분포 (건수/금액, 월별)
+- `defect_cause_distribution()` - 발생 원인별(6M) 분포 (건수/금액, 월별)
+- `defect_type_ytd_distribution()` - 불량 유형별 연간 누적 분포 (1월~선택된 월)
+- `defect_cause_ytd_distribution()` - 발생 원인별 연간 누적 분포 (1월~선택된 월)
 - `sparkline_data()` - KPI별 스파크라인 (12개월)
 - `upcoming_schedules()` - 향후 14일 품질 일정
 
@@ -57,28 +61,68 @@ alwaysApply: false
       "month": 1,
       "label": "2025-01",
       "actual": 실적값,
-      "target": 목표값 또는 null
+      "target": 목표값 또는 null,
+      "ytd_data": [  # 해당 연도 1월부터 해당 월까지의 전체 데이터
+        {"month": 1, "actual": 값1},
+        {"month": 2, "actual": 값2},
+        ...
+      ]
     },
     ...  # 최근 12개월
   ]
 }
 ```
 
+### ytd_data 필드
+- **목적**: 각 연도의 1월부터 해당 월까지의 정확한 평균 및 누적 계산을 위한 데이터
+- **예시**: 2024년 11월 데이터의 경우, ytd_data는 2024년 1월~11월의 전체 데이터를 포함
+- **사용처**: 프론트엔드에서 평균선(불량율) 및 누적선(F-COST, 고객불만) 계산에 활용
+- **계산 로직**:
+  - 최근 12개월에 포함된 연도들을 수집
+  - 각 연도의 1월~12월 전체 데이터를 미리 계산
+  - 각 월 데이터에 해당 연도 1월부터 해당 월까지의 데이터 배열 첨부
+
+### 불량율 추이 (`defect_rate_trend`)
+- **계산 로직**: 월별 `(불량수량 / 생산수량) × 100`
+- **목표값**: `KPITarget` 테이블에서 `kpi_type='defect_rate'`로 조회
+- **단위**: %, 프론트엔드에서 ppm 전환 지원
+- **파라미터**: `year`, `month`
+- **ytd_data**: 각 연도의 1월~해당 월까지의 불량율 데이터 (평균선 계산용)
+
 ### F-COST 추이 (`f_cost_trend`)
 - **계산 로직**: 월별 `Σ(Nonconformance.total_amount)`
 - **목표값**: `KPITarget` 테이블에서 `kpi_type='f_cost'`로 조회
 - **단위**: 원(KRW), 프론트엔드에서 천원 단위로 변환하여 표시
 - **파라미터**: `year`, `month`
+- **ytd_data**: 각 연도의 1월~해당 월까지의 F-COST 데이터 (누적선 계산용)
 
 ### 고객 불만 건수 추이 (`complaints_trend`)
 - **계산 로직**: 월별 `COUNT(CustomerComplaint)`
 - **목표값**: `KPITarget` 테이블에서 `kpi_type='complaints'`로 조회
 - **단위**: 건
 - **파라미터**: `year`, `month`
+- **ytd_data**: 각 연도의 1월~해당 월까지의 고객 불만 건수 데이터 (누적선 계산용)
 
 ## 프론트엔드 차트 컴포넌트
 - `DefectRateTrendChart` - 월별 불량율 추이 (%, ppm 전환 지원)
+  - 평균선: ytd_data를 사용하여 각 연도 1월부터의 누적 평균 계산 (보라색 점선)
+  - 연도 구분선: 매년 1월에 세로 점선 표시
 - `FCostTrendChart` - 월별 F-COST 추이 (천원 단위)
+  - 누적선: ytd_data를 사용하여 각 연도 1월부터의 누적 합계 계산 (보라색 점선)
+  - 연도 구분선: 매년 1월에 세로 점선 표시
 - `ComplaintsTrendChart` - 월별 고객 불만 건수 추이 (건 단위)
+  - 누적선: ytd_data를 사용하여 각 연도 1월부터의 누적 합계 계산 (보라색 점선)
+  - 연도 구분선: 매년 1월에 세로 점선 표시
+- `DonutChart` - 도넛 차트 (불량 유형/발생 원인 분포)
+  - 건수/금액 토글 지원
+  - 금액 단위: 천원 (정수 표시)
 
 모든 차트는 동일한 스타일과 레이아웃을 사용하며, Recharts 라이브러리로 구현되어 있습니다.
+
+### 차트 데이터 계산 방식
+- **평균선/누적선**: 백엔드에서 제공하는 `ytd_data`를 활용하여 프론트엔드에서 계산
+- **정확성**: 각 연도의 1월부터 해당 월까지의 전체 데이터를 기반으로 계산하므로, 최근 12개월에 이전 연도가 포함되어도 정확한 통계 제공
+- **예시**: 2025년 10월 기준으로 최근 12개월을 보여줄 때
+  - 2024년 11월: 2024년 1월~11월 데이터로 평균/누적 계산
+  - 2024년 12월: 2024년 1월~12월 데이터로 평균/누적 계산
+  - 2025년 1월: 2025년 1월 데이터로 평균/누적 계산 (새 연도 시작)

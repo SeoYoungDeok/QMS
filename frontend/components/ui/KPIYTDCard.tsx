@@ -36,6 +36,15 @@ export default function KPIYTDCard({
     return 'bg-green-500'
   }
 
+  // F-COST인 경우 천원 단위로 변환
+  const isFCost = title === 'F-COST (YTD)'
+  const formatValue = (val: number) => {
+    if (isFCost) {
+      return Math.round(val / 1000).toLocaleString()
+    }
+    return val.toLocaleString()
+  }
+
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
       {/* 헤더 */}
@@ -48,7 +57,7 @@ export default function KPIYTDCard({
 
       {/* 메인 값 */}
       <div className="mb-4">
-        <p className="text-3xl font-bold text-[var(--text-primary)]">{value} {title === 'F-COST (YTD)' ? '천원' : unit}</p>
+        <p className="text-3xl font-bold text-[var(--text-primary)]">{value}</p>
       </div>
 
       {/* 진행률 */}
@@ -72,8 +81,8 @@ export default function KPIYTDCard({
           </div>
           
           <div className="flex justify-between text-xs text-[var(--text-secondary)]">
-            <span>목표: {progress.target.toLocaleString()}{unit}</span>
-            <span>현재: {progress.current.toLocaleString()}{unit}</span>
+            <span>목표: {formatValue(progress.target)} {unit}</span>
+            <span>현재: {formatValue(progress.current)} {unit}</span>
           </div>
         </div>
       )}

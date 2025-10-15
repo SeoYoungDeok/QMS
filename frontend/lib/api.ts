@@ -797,6 +797,7 @@ export interface DefectRateTrendData {
   label: string
   actual: number
   target: number | null
+  ytd_data?: Array<{ month: number; actual: number }>
 }
 
 export interface FCostTrendData {
@@ -805,6 +806,7 @@ export interface FCostTrendData {
   label: string
   actual: number
   target: number | null
+  ytd_data?: Array<{ month: number; actual: number }>
 }
 
 export interface ComplaintsTrendData {
@@ -813,6 +815,7 @@ export interface ComplaintsTrendData {
   label: string
   actual: number
   target: number | null
+  ytd_data?: Array<{ month: number; actual: number }>
 }
 
 export interface DefectTypeDistribution {
@@ -872,6 +875,20 @@ export const dashboardAPI = {
   getDefectCauseDistribution: (year: number, month: number, metric: 'count' | 'amount' = 'count') =>
     api.get<{ year: number; month: number; metric: string; data: DefectCauseDistribution[] }>(
       '/dashboard/charts/defect-cause-distribution/',
+      { params: { year, month, metric } }
+    ),
+  
+  // 불량 유형별 연간 누적 분포 (1월~선택된 월)
+  getDefectTypeYTDDistribution: (year: number, month: number, metric: 'count' | 'amount' = 'count') =>
+    api.get<{ year: number; month: number; metric: string; data: DefectTypeDistribution[] }>(
+      '/dashboard/charts/defect-type-ytd-distribution/',
+      { params: { year, month, metric } }
+    ),
+  
+  // 발생 원인별 연간 누적 분포 (1월~선택된 월, 6M)
+  getDefectCauseYTDDistribution: (year: number, month: number, metric: 'count' | 'amount' = 'count') =>
+    api.get<{ year: number; month: number; metric: string; data: DefectCauseDistribution[] }>(
+      '/dashboard/charts/defect-cause-ytd-distribution/',
       { params: { year, month, metric } }
     ),
   

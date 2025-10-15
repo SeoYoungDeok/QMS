@@ -12,6 +12,8 @@ urlpatterns = [
     path('charts/complaints-trend/', chart_views.complaints_trend, name='chart-complaints-trend'),
     path('charts/defect-type-distribution/', chart_views.defect_type_distribution, name='chart-defect-type-distribution'),
     path('charts/defect-cause-distribution/', chart_views.defect_cause_distribution, name='chart-defect-cause-distribution'),
+    path('charts/defect-type-ytd-distribution/', chart_views.defect_type_ytd_distribution, name='chart-defect-type-ytd-distribution'),
+    path('charts/defect-cause-ytd-distribution/', chart_views.defect_cause_ytd_distribution, name='chart-defect-cause-ytd-distribution'),
     
     # 스파크라인 데이터
     path('sparkline/', chart_views.sparkline_data, name='sparkline-data'),

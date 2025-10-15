@@ -29,7 +29,8 @@ export default function DonutChart({
 }: DonutChartProps) {
   const formatValue = (value: number) => {
     if (metric === 'amount') {
-      return `${(value / 1000000).toFixed(1)}M`
+      // 천원 단위로 변환하고 반올림하여 정수로 표시
+      return `${Math.round(value / 1000).toLocaleString()}`
     }
     return value.toString()
   }
@@ -42,7 +43,7 @@ export default function DonutChart({
           <p className="font-semibold text-[var(--text-primary)]">{data.name}</p>
           <p className="text-sm text-[var(--text-secondary)]">
             {metric === 'amount' 
-              ? `${data.value.toLocaleString()} KRW` 
+              ? `${Math.round(data.value / 1000).toLocaleString()} 천원` 
               : `${data.value} 건`
             }
           </p>
@@ -97,7 +98,11 @@ export default function DonutChart({
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
-                label={(entry: any) => `${entry.name}: ${formatValue(entry.value)}`}
+                label={(entry: any) => {
+                  const formattedValue = formatValue(entry.value)
+                  const unit = metric === 'amount' ? '천원' : '건'
+                  return `${entry.name}: ${formattedValue}${unit}`
+                }}
                 labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
                 animationDuration={500}
               >
