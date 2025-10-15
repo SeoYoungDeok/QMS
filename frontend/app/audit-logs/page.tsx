@@ -42,24 +42,51 @@ interface PaginationInfo {
 
 const ACTION_CHOICES = [
   { value: '', label: '전체' },
+  // 인증 관련
   { value: 'LOGIN_SUCCESS', label: '로그인 성공' },
   { value: 'LOGIN_FAILED', label: '로그인 실패' },
+  { value: 'SIGNUP', label: '회원가입' },
+  { value: 'CHANGE_PASSWORD', label: '비밀번호 변경' },
+  // 사용자 관리
   { value: 'CREATE_USER', label: '사용자 추가' },
   { value: 'UPDATE_USER', label: '사용자 수정' },
   { value: 'DELETE_USER', label: '사용자 삭제' },
+  { value: 'RESTORE_USER', label: '사용자 복구' },
   { value: 'RESET_PASSWORD', label: '비밀번호 초기화' },
   { value: 'UPDATE_ROLE', label: '권한 변경' },
   { value: 'UPDATE_STATUS', label: '계정 상태 변경' },
-  { value: 'SIGNUP', label: '회원가입' },
+  // 실적 관리
   { value: 'CREATE_PERFORMANCE', label: '실적 등록' },
   { value: 'UPDATE_PERFORMANCE', label: '실적 수정' },
   { value: 'DELETE_PERFORMANCE', label: '실적 삭제' },
+  { value: 'BULK_CREATE_PERFORMANCE', label: '실적 일괄 등록' },
+  { value: 'BULK_CREATE_PERFORMANCE_CSV', label: '실적 CSV 일괄 등록' },
+  { value: 'BULK_DELETE_PERFORMANCE', label: '실적 일괄 삭제' },
+  { value: 'EXPORT_PERFORMANCE', label: '실적 내보내기' },
+  // 부적합 관리
   { value: 'CREATE_NONCONFORMANCE', label: '부적합 등록' },
   { value: 'UPDATE_NONCONFORMANCE', label: '부적합 수정' },
   { value: 'DELETE_NONCONFORMANCE', label: '부적합 삭제' },
+  { value: 'CREATE_DEFECT_TYPE', label: '불량유형 등록' },
+  { value: 'DELETE_DEFECT_TYPE', label: '불량유형 삭제' },
+  { value: 'CREATE_DEFECT_CAUSE', label: '불량원인 등록' },
+  { value: 'DELETE_DEFECT_CAUSE', label: '불량원인 삭제' },
+  { value: 'REORDER_DEFECT_TYPES', label: '불량유형 순서 변경' },
+  { value: 'REORDER_DEFECT_CAUSES', label: '불량원인 순서 변경' },
+  { value: 'EXPORT_NONCONFORMANCE', label: '부적합 내보내기' },
+  // 일정 관리
   { value: 'CREATE_SCHEDULE', label: '일정 등록' },
   { value: 'UPDATE_SCHEDULE', label: '일정 수정' },
   { value: 'DELETE_SCHEDULE', label: '일정 삭제' },
+  // 고객불만 관리
+  { value: 'CREATE_CUSTOMER_COMPLAINT', label: '고객불만 등록' },
+  { value: 'UPDATE_CUSTOMER_COMPLAINT', label: '고객불만 수정' },
+  { value: 'DELETE_CUSTOMER_COMPLAINT', label: '고객불만 삭제' },
+  { value: 'EXPORT_CUSTOMER_COMPLAINT', label: '고객불만 내보내기' },
+  // KPI 목표 관리
+  { value: 'CREATE_KPI_TARGET', label: 'KPI 목표 등록' },
+  { value: 'UPDATE_KPI_TARGET', label: 'KPI 목표 수정' },
+  { value: 'DELETE_KPI_TARGET', label: 'KPI 목표 삭제' },
 ]
 
 export default function AuditLogsPage() {
@@ -184,14 +211,56 @@ export default function AuditLogsPage() {
     setShowDetailModal(true)
   }
 
-  // 액션 타입별 배지 색상
-  const getActionBadgeVariant = (action: string) => {
-    if (action.includes('LOGIN_SUCCESS')) return 'success'
-    if (action.includes('LOGIN_FAILED')) return 'destructive'
-    if (action.includes('DELETE')) return 'destructive'
-    if (action.includes('CREATE')) return 'default'
-    if (action.includes('UPDATE')) return 'secondary'
-    return 'outline'
+  // 액션 타입별 배지 색상 (통일성 있게 분류)
+  const getActionBadgeVariant = (action: string): 'success' | 'destructive' | 'default' | 'primary' | 'secondary' | 'warning' | 'info' | 'outline' => {
+    // 1. 성공 메시지 (초록색 - success)
+    if (action === 'LOGIN_SUCCESS') {
+      return 'success'
+    }
+    
+    // 2. 실패 메시지 (빨간색 - destructive)
+    if (action === 'LOGIN_FAILED') {
+      return 'destructive'
+    }
+    
+    // 3. 삭제 관련 (빨간색 - destructive)
+    // DELETE_USER, DELETE_PERFORMANCE, DELETE_NONCONFORMANCE, DELETE_DEFECT_TYPE, 
+    // DELETE_DEFECT_CAUSE, DELETE_SCHEDULE, DELETE_CUSTOMER_COMPLAINT, DELETE_KPI_TARGET,
+    // BULK_DELETE_PERFORMANCE
+    if (action.startsWith('DELETE_') || action.startsWith('BULK_DELETE_')) {
+      return 'destructive'
+    }
+    
+    // 4. 내보내기 관련 (보라색 - secondary)
+    // EXPORT_PERFORMANCE, EXPORT_NONCONFORMANCE, EXPORT_CUSTOMER_COMPLAINT
+    if (action.startsWith('EXPORT_')) {
+      return 'secondary'
+    }
+    
+    // 5. 수정/변경 관련 (주황색 - warning)
+    // UPDATE_USER, UPDATE_PERFORMANCE, UPDATE_NONCONFORMANCE, UPDATE_SCHEDULE,
+    // UPDATE_CUSTOMER_COMPLAINT, UPDATE_KPI_TARGET, UPDATE_ROLE, UPDATE_STATUS,
+    // CHANGE_PASSWORD, RESET_PASSWORD, REORDER_DEFECT_TYPES, REORDER_DEFECT_CAUSES
+    if (action.startsWith('UPDATE_') || 
+        action.startsWith('CHANGE_') || 
+        action.startsWith('RESET_') || 
+        action.startsWith('REORDER_')) {
+      return 'warning'
+    }
+    
+    // 6. 생성/등록/추가 관련 (파란색 - primary)
+    // CREATE_USER, CREATE_PERFORMANCE, CREATE_NONCONFORMANCE, CREATE_DEFECT_TYPE,
+    // CREATE_DEFECT_CAUSE, CREATE_SCHEDULE, CREATE_CUSTOMER_COMPLAINT, CREATE_KPI_TARGET,
+    // BULK_CREATE_PERFORMANCE, BULK_CREATE_PERFORMANCE_CSV, SIGNUP, RESTORE_USER
+    if (action.startsWith('CREATE_') || 
+        action.startsWith('BULK_CREATE_') || 
+        action === 'SIGNUP' || 
+        action === 'RESTORE_USER') {
+      return 'primary'
+    }
+    
+    // 7. 기타 (회색 - default)
+    return 'default'
   }
 
   // 날짜 포맷팅
