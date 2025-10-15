@@ -111,10 +111,13 @@ export default function NonconformancePage() {
     }
   }, [isAuthenticated])
 
-  // 탭 변경 시 목록 로드
+  // 탭 변경 시 목록 로드 및 NCR NO 자동 채우기
   useEffect(() => {
     if (activeTab === 'list' && isAuthenticated) {
       loadNonconformances()
+    } else if (activeTab === 'create' && isAuthenticated) {
+      // 등록 탭으로 전환 시 NCR NO 자동 채우기
+      loadNextNcrNo()
     }
   }, [activeTab, isAuthenticated])
 
@@ -162,6 +165,22 @@ export default function NonconformancePage() {
     } catch (error) {
       console.error('Load vendors error:', error)
       setVendors([])
+    }
+  }
+
+  // 다음 NCR NO 로드
+  const loadNextNcrNo = async () => {
+    try {
+      const response = await nonconformanceAPI.getNextNcrNo()
+      if (response.data.ok && response.data.data.next_ncr_no) {
+        setCreateForm(prev => ({
+          ...prev,
+          ncr_no: response.data.data.next_ncr_no
+        }))
+      }
+    } catch (error) {
+      console.error('다음 NCR NO 로드 실패:', error)
+      // 실패해도 사용자가 직접 입력할 수 있으므로 에러 토스트는 표시하지 않음
     }
   }
 
@@ -281,6 +300,9 @@ export default function NonconformancePage() {
         note: ''
       })
       setValidationErrors({})
+      
+      // 다음 NCR NO 자동 채우기
+      loadNextNcrNo()
       
     } catch (err: any) {
       if (err.response?.data) {
@@ -1437,36 +1459,30 @@ export default function NonconformancePage() {
                     { label: 'Why 4', value: selectedNonconformance.why4 },
                     { label: 'Why 5', value: selectedNonconformance.why5 }
                   ].map((why, index) => (
-                    why.value && (
-                      <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
-                        <div className="flex gap-3">
-                          <span className="text-xs font-semibold text-purple-600 min-w-[60px] flex items-center">
-                            {why.label}
-                          </span>
-                          <span className="text-sm text-gray-700 flex-1">{why.value}</span>
-                        </div>
+                    <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
+                      <div className="flex gap-3">
+                        <span className="text-xs font-semibold text-purple-600 min-w-[60px] flex items-center">
+                          {why.label}
+                        </span>
+                        <span className="text-sm text-gray-700 flex-1">{why.value || '-'}</span>
                       </div>
-                    )
+                    </div>
                   ))}
                   
-                  {selectedNonconformance.root_cause && (
-                    <div className="mt-3 bg-gradient-to-r from-yellow-100 to-amber-100 p-4 rounded-lg border-l-4 border-yellow-600">
-                      <label className="text-sm font-bold text-yellow-900 flex items-center">
-                        💡 근본원인
-                      </label>
-                      <p className="text-gray-800 mt-2 leading-relaxed">{selectedNonconformance.root_cause}</p>
-                    </div>
-                  )}
+                  <div className="mt-3 bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-600">
+                    <label className="text-sm font-bold text-purple-900 flex items-center">
+                      💡 근본원인
+                    </label>
+                    <p className="text-gray-800 mt-2 leading-relaxed">{selectedNonconformance.root_cause || '-'}</p>
+                  </div>
                 </div>
               </div>
 
               {/* 비고 */}
-              {selectedNonconformance.note && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <label className="text-xs font-medium text-gray-700 uppercase block mb-2">비고</label>
-                  <p className="text-sm text-gray-700 leading-relaxed">{selectedNonconformance.note}</p>
-                </div>
-              )}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label className="text-xs font-medium text-gray-700 uppercase block mb-2">비고</label>
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedNonconformance.note || '-'}</p>
+              </div>
 
               {/* 등록 정보 */}
               <div className="bg-gray-100 rounded-lg p-4 border-t-2 border-gray-300">

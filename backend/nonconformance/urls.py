@@ -18,9 +18,14 @@ urlpatterns = [
     # 코드 테이블 관리 (실무자 이상)
     path('defect-types/create/', views.defect_type_create, name='defect-type-create'),
     path('defect-types/<str:code>/delete/', views.defect_type_delete, name='defect-type-delete'),
+    path('defect-types/reorder/', views.reorder_defect_types, name='defect-types-reorder'),
     path('defect-causes/create/', views.defect_cause_create, name='defect-cause-create'),
     path('defect-causes/<str:code>/delete/', views.defect_cause_delete, name='defect-cause-delete'),
+    path('defect-causes/reorder/', views.reorder_defect_causes, name='defect-causes-reorder'),
     
     # CSV 다운로드
     path('export/', views.nonconformance_csv_export, name='nonconformance-export'),
+    
+    # 다음 NCR NO 생성
+    path('next-ncr-no/', views.get_next_ncr_no, name='next-ncr-no'),
 ]

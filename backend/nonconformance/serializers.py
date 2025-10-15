@@ -25,6 +25,7 @@ class DefectCauseSerializer(serializers.ModelSerializer):
 class NonconformanceSerializer(serializers.ModelSerializer):
     """부적합 시리얼라이저 (생성/수정용)"""
     
+    # Read-only 필드들 (응답용)
     weekday = serializers.CharField(source='get_weekday_display_korean', read_only=True)
     created_by_name = serializers.CharField(source='created_by.name', read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
@@ -32,6 +33,16 @@ class NonconformanceSerializer(serializers.ModelSerializer):
     cause_name = serializers.CharField(source='cause_code.name', read_only=True)
     cause_category = serializers.CharField(source='cause_code.category', read_only=True)
     cause_category_display = serializers.CharField(source='cause_code.get_category_display', read_only=True)
+    
+    # 외래키 필드를 문자열 코드로 변환 (입력/출력 모두)
+    defect_type_code = serializers.SlugRelatedField(
+        slug_field='code',
+        queryset=DefectType.objects.all()
+    )
+    cause_code = serializers.SlugRelatedField(
+        slug_field='code',
+        queryset=DefectCause.objects.all()
+    )
     
     class Meta:
         model = Nonconformance
@@ -68,17 +79,6 @@ class NonconformanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("가중치는 0과 1 사이의 값이어야 합니다.")
         return value
     
-    def validate_defect_type_code(self, value):
-        """불량유형 코드 검증"""
-        if not DefectType.objects.filter(code=value.code).exists():
-            raise serializers.ValidationError("존재하지 않는 불량유형 코드입니다.")
-        return value
-    
-    def validate_cause_code(self, value):
-        """발생원인 코드 검증"""
-        if not DefectCause.objects.filter(code=value.code).exists():
-            raise serializers.ValidationError("존재하지 않는 발생원인 코드입니다.")
-        return value
     
     def validate_operators(self, value):
         """작업자 JSON 검증"""
@@ -134,7 +134,9 @@ class NonconformanceListSerializer(serializers.ModelSerializer):
     weekday = serializers.CharField(source='get_weekday_display_korean', read_only=True)
     created_by_name = serializers.CharField(source='created_by.name', read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
+    defect_type_code = serializers.CharField(source='defect_type_code.code', read_only=True)
     defect_type_name = serializers.CharField(source='defect_type_code.name', read_only=True)
+    cause_code = serializers.CharField(source='cause_code.code', read_only=True)
     cause_name = serializers.CharField(source='cause_code.name', read_only=True)
     cause_category_display = serializers.CharField(source='cause_code.get_category_display', read_only=True)
     
@@ -145,13 +147,26 @@ class NonconformanceListSerializer(serializers.ModelSerializer):
             'vendor', 'product_name', 'control_no', 'defect_qty', 'unit_price',
             'weight_factor', 'total_amount', 'detection_stage',
             'defect_type_code', 'defect_type_name', 'cause_code', 'cause_name',
-            'cause_category_display', 'weekday_code', 'weekday',
-            'created_by_name', 'created_at'
+            'cause_category_display',
+            'why1', 'why2', 'why3', 'why4', 'why5', 'root_cause',
+            'operators', 'process_name', 'note',
+            'weekday_code', 'weekday',
+            'created_by', 'created_by_name', 'created_at', 'updated_at'
         ]
 
 
 class NonconformanceCreateSerializer(serializers.ModelSerializer):
     """부적합 생성 전용 시리얼라이저"""
+    
+    # 외래키 필드를 문자열 코드로 변환
+    defect_type_code = serializers.SlugRelatedField(
+        slug_field='code',
+        queryset=DefectType.objects.all()
+    )
+    cause_code = serializers.SlugRelatedField(
+        slug_field='code',
+        queryset=DefectCause.objects.all()
+    )
     
     class Meta:
         model = Nonconformance

@@ -493,9 +493,21 @@ export const nonconformanceAPI = {
   createDefectCause: (data: { code: string, name: string, category: string, description?: string }) =>
     api.post('/nonconformance/defect-causes/create/', data),
   
+  // 다음 NCR NO 가져오기
+  getNextNcrNo: () =>
+    api.get<{ok: boolean, data: {next_ncr_no: string, year: number, number: number}}>('/nonconformance/next-ncr-no/'),
+  
+  // 불량 유형 재정렬
+  reorderDefectTypes: (codes: string[]) =>
+    api.post('/nonconformance/defect-types/reorder/', { codes }),
+  
   // 발생 원인 삭제
   deleteDefectCause: (code: string) =>
     api.delete(`/nonconformance/defect-causes/${code}/delete/`),
+  
+  // 발생 원인 재정렬
+  reorderDefectCauses: (major: string, codes: string[]) =>
+    api.post('/nonconformance/defect-causes/reorder/', { major, codes }),
   
   // CSV 다운로드
   exportCSV: (year: number, month: number) =>

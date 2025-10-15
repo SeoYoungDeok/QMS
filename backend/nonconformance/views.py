@@ -621,6 +621,381 @@ def defect_cause_delete(request, code):
         )
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def reorder_defect_types(request):
+    """불량 유형 코드 재정렬 API
+    
+    드래그 앤 드롭으로 순서 변경 시 기존 내역들의 외래키를 업데이트하여
+    원래 선택했던 유형을 계속 가리키도록 함
+    
+    예: D01/파손과 D02/소재기인을 바꾸면
+        D01과 D02의 위치가 바뀜
+        기존에 "파손"(원래 D01)을 선택한 내역 → D02로 외래키 변경
+        기존에 "소재기인"(원래 D02)을 선택한 내역 → D01로 외래키 변경
+    
+    Request Body:
+        codes: 새로운 순서의 코드 리스트 (예: ['D02', 'D01', 'D03'])
+    """
+    if request.user.role_level < 1:
+        return Response(
+            {'error': '코드 재정렬 권한이 없습니다.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        from django.db import transaction
+        from customer_complaints.models import CustomerComplaint
+        
+        codes = request.data.get('codes', [])
+        if not codes or not isinstance(codes, list):
+            return Response(
+                {'error': '코드 리스트가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 기존 순서 가져오기 (D01, D02, D03...)
+        original_defect_types = list(DefectType.objects.filter(
+            code__regex=r'^D\d{2}$'
+        ).order_by('code'))
+        
+        if len(codes) != len(original_defect_types):
+            return Response(
+                {'error': '코드 개수가 일치하지 않습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 새로운 순서대로 DefectType 객체 가져오기
+        reordered_defect_types = []
+        for code in codes:
+            try:
+                dt = DefectType.objects.get(code=code)
+                reordered_defect_types.append(dt)
+            except DefectType.DoesNotExist:
+                return Response(
+                    {'error': f'코드 {code}를 찾을 수 없습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        if len(reordered_defect_types) != len(original_defect_types):
+            return Response(
+                {'error': f'재정렬 항목 수가 일치하지 않습니다. (원본: {len(original_defect_types)}, 재정렬: {len(reordered_defect_types)})'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 코드 매핑 생성 (old_code -> new_code)
+        # 각 위치에서 원래 있던 코드를 새로운 코드로 매핑
+        code_mapping = {}
+        for i, original_dt in enumerate(original_defect_types):
+            new_dt = reordered_defect_types[i]
+            if original_dt.pk != new_dt.pk:
+                # 원래 이 위치에 있던 코드가 새로운 위치의 코드로 변경됨
+                code_mapping[new_dt.code] = original_dt.code
+        
+        if not code_mapping:
+            return Response({
+                'ok': True,
+                'message': '변경 사항이 없습니다.'
+            })
+        
+        # 트랜잭션으로 DefectType의 code 필드를 교환
+        # code가 primary key이므로 임시 코드를 거쳐서 교환해야 함
+        with transaction.atomic():
+            # 1단계: 교환할 DefectType들의 code를 임시 코드로 변경
+            temp_mapping = {}
+            for i, (old_code, new_code) in enumerate(code_mapping.items()):
+                temp_code = f'TEMP_SWAP_{i}'
+                
+                # old_code를 가진 DefectType의 정보 저장
+                dt = DefectType.objects.get(code=old_code)
+                name = dt.name
+                description = dt.description
+                
+                # 외래키 관계 때문에 직접 수정할 수 없으므로
+                # 1. 새로운 임시 DefectType 생성
+                DefectType.objects.filter(code=temp_code).delete()  # 혹시 모를 충돌 방지
+                DefectType.objects.create(
+                    code=temp_code,
+                    name=name,
+                    description=description
+                )
+                
+                # 2. 모든 외래키를 임시로 이동
+                Nonconformance.objects.filter(defect_type_code=old_code).update(
+                    defect_type_code=temp_code
+                )
+                CustomerComplaint.objects.filter(defect_type_code=old_code).update(
+                    defect_type_code=temp_code
+                )
+                
+                # 3. 원본 삭제
+                DefectType.objects.filter(code=old_code).delete()
+                
+                temp_mapping[temp_code] = (new_code, name, description)
+            
+            # 2단계: 임시 코드를 최종 코드로 변경
+            for temp_code, (final_code, name, description) in temp_mapping.items():
+                # 1. 새로운 최종 코드로 DefectType 생성
+                DefectType.objects.create(
+                    code=final_code,
+                    name=name,
+                    description=description
+                )
+                
+                # 2. 외래키를 최종 코드로 이동
+                Nonconformance.objects.filter(defect_type_code=temp_code).update(
+                    defect_type_code=final_code
+                )
+                CustomerComplaint.objects.filter(defect_type_code=temp_code).update(
+                    defect_type_code=final_code
+                )
+                
+                # 3. 임시 코드 삭제
+                DefectType.objects.filter(code=temp_code).delete()
+        
+        # 감사 로그
+        changes = ', '.join([f'{old}->{new}' for old, new in code_mapping.items()])
+        AuditLog.log_action(
+            user=request.user,
+            action='REORDER_DEFECT_TYPES',
+            target_id=None,
+            details=f'불량유형 재정렬 (외래키 업데이트): {changes}',
+            ip_address=get_client_ip(request)
+        )
+        
+        return Response({
+            'ok': True,
+            'message': f'{len(code_mapping)}개 항목이 재정렬되었습니다.',
+            'changes': code_mapping
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'재정렬 중 오류 발생: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def reorder_defect_causes(request):
+    """발생 원인 코드 재정렬 API
+    
+    드래그 앤 드롭으로 순서 변경 시 기존 내역들의 외래키를 업데이트하여
+    원래 선택했던 원인을 계속 가리키도록 함
+    
+    예: M1.1/재료불량과 M1.2/기계고장을 바꾸면
+        M1.1과 M1.2의 위치가 바뀜
+        기존에 "재료불량"(원래 M1.1)을 선택한 내역 → M1.2로 외래키 변경
+        기존에 "기계고장"(원래 M1.2)을 선택한 내역 → M1.1로 외래키 변경
+    
+    Request Body:
+        major: 메이저 번호 (예: 'M1')
+        codes: 새로운 순서의 코드 리스트 (예: ['M1.2', 'M1.1', 'M1.3'])
+    """
+    if request.user.role_level < 1:
+        return Response(
+            {'error': '코드 재정렬 권한이 없습니다.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        from django.db import transaction
+        from customer_complaints.models import CustomerComplaint
+        import re
+        
+        major = request.data.get('major', '')
+        codes = request.data.get('codes', [])
+        
+        if not major or not codes or not isinstance(codes, list):
+            return Response(
+                {'error': '메이저 번호와 코드 리스트가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 기존 순서 가져오기 (M1.1, M1.2, M1.3...)
+        original_defect_causes = list(DefectCause.objects.filter(
+            code__startswith=major + '.'
+        ).order_by('code'))
+        
+        if len(codes) != len(original_defect_causes):
+            return Response(
+                {'error': '코드 개수가 일치하지 않습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 새로운 순서대로 DefectCause 객체 가져오기
+        reordered_defect_causes = []
+        for code in codes:
+            try:
+                dc = DefectCause.objects.get(code=code)
+                if not code.startswith(major + '.'):
+                    return Response(
+                        {'error': f'코드 {code}는 {major} 그룹에 속하지 않습니다.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                reordered_defect_causes.append(dc)
+            except DefectCause.DoesNotExist:
+                return Response(
+                    {'error': f'코드 {code}를 찾을 수 없습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        if len(reordered_defect_causes) != len(original_defect_causes):
+            return Response(
+                {'error': f'재정렬 항목 수가 일치하지 않습니다. (원본: {len(original_defect_causes)}, 재정렬: {len(reordered_defect_causes)})'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # 코드 매핑 생성 (old_code -> new_code)
+        code_mapping = {}
+        for i, original_dc in enumerate(original_defect_causes):
+            new_dc = reordered_defect_causes[i]
+            if original_dc.pk != new_dc.pk:
+                code_mapping[new_dc.code] = original_dc.code
+        
+        if not code_mapping:
+            return Response({
+                'ok': True,
+                'message': '변경 사항이 없습니다.'
+            })
+        
+        # 트랜잭션으로 DefectCause의 code 필드를 교환
+        # code가 primary key이므로 임시 코드를 거쳐서 교환해야 함
+        with transaction.atomic():
+            # 1단계: 교환할 DefectCause들의 code를 임시 코드로 변경
+            temp_mapping = {}
+            for i, (old_code, new_code) in enumerate(code_mapping.items()):
+                temp_code = f'TEMP_SWAP_{major}_{i}'
+                
+                # old_code를 가진 DefectCause의 정보 저장
+                dc = DefectCause.objects.get(code=old_code)
+                category = dc.category
+                name = dc.name
+                description = dc.description
+                
+                # 외래키 관계 때문에 직접 수정할 수 없으므로
+                # 1. 새로운 임시 DefectCause 생성
+                DefectCause.objects.filter(code=temp_code).delete()  # 혹시 모를 충돌 방지
+                DefectCause.objects.create(
+                    code=temp_code,
+                    category=category,
+                    name=name,
+                    description=description
+                )
+                
+                # 2. 모든 외래키를 임시로 이동
+                Nonconformance.objects.filter(cause_code=old_code).update(
+                    cause_code=temp_code
+                )
+                CustomerComplaint.objects.filter(cause_code=old_code).update(
+                    cause_code=temp_code
+                )
+                
+                # 3. 원본 삭제
+                DefectCause.objects.filter(code=old_code).delete()
+                
+                temp_mapping[temp_code] = (new_code, category, name, description)
+            
+            # 2단계: 임시 코드를 최종 코드로 변경
+            for temp_code, (final_code, category, name, description) in temp_mapping.items():
+                # 1. 새로운 최종 코드로 DefectCause 생성
+                DefectCause.objects.create(
+                    code=final_code,
+                    category=category,
+                    name=name,
+                    description=description
+                )
+                
+                # 2. 외래키를 최종 코드로 이동
+                Nonconformance.objects.filter(cause_code=temp_code).update(
+                    cause_code=final_code
+                )
+                CustomerComplaint.objects.filter(cause_code=temp_code).update(
+                    cause_code=final_code
+                )
+                
+                # 3. 임시 코드 삭제
+                DefectCause.objects.filter(code=temp_code).delete()
+        
+        # 감사 로그
+        changes = ', '.join([f'{old}->{new}' for old, new in code_mapping.items()])
+        AuditLog.log_action(
+            user=request.user,
+            action='REORDER_DEFECT_CAUSES',
+            target_id=None,
+            details=f'발생원인 재정렬 (외래키 업데이트) ({major}): {changes}',
+            ip_address=get_client_ip(request)
+        )
+        
+        return Response({
+            'ok': True,
+            'message': f'{len(code_mapping)}개 항목이 재정렬되었습니다.',
+            'changes': code_mapping
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'재정렬 중 오류 발생: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_next_ncr_no(request):
+    """다음 NCR NO 생성 API
+    
+    현재 연도 기준으로 마지막 NCR NO를 찾아서 +1한 번호를 반환
+    형식: NCR-yyyy-001
+    """
+    try:
+        from datetime import datetime
+        import re
+        
+        current_year = datetime.now().year
+        
+        # 현재 연도의 NCR NO 패턴으로 필터링
+        pattern = f'NCR-{current_year}-'
+        
+        # 현재 연도의 부적합 중 가장 큰 번호 찾기
+        nonconformances = Nonconformance.objects.filter(
+            ncr_no__startswith=pattern
+        ).order_by('-ncr_no')
+        
+        if nonconformances.exists():
+            # 마지막 NCR NO에서 번호 추출
+            last_ncr_no = nonconformances.first().ncr_no
+            # NCR-2025-001 형식에서 001 부분 추출
+            match = re.search(r'NCR-\d{4}-(\d+)', last_ncr_no)
+            if match:
+                last_number = int(match.group(1))
+                next_number = last_number + 1
+            else:
+                next_number = 1
+        else:
+            # 현재 연도의 첫 번째 NCR
+            next_number = 1
+        
+        # 3자리 숫자로 포맷팅
+        next_ncr_no = f'NCR-{current_year}-{next_number:03d}'
+        
+        return Response({
+            'ok': True,
+            'data': {
+                'next_ncr_no': next_ncr_no,
+                'year': current_year,
+                'number': next_number
+            }
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'다음 NCR NO 생성 중 오류가 발생했습니다: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def nonconformance_csv_export(request):
