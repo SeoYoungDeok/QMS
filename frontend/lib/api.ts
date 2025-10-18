@@ -1065,4 +1065,91 @@ export const tagsAPI = {
   delete: (id: number) => api.delete(`/tags/${id}/`),
 }
 
+// 백업 관리 타입 정의
+export interface BackupRecord {
+  id: number
+  backup_date: string
+  file_size: number
+  file_size_display: string
+  backup_type: 'auto' | 'manual'
+  backup_type_display: string
+  file_path: string
+  created_by: number | null
+  created_by_name: string
+  note: string
+}
+
+export interface ArchivableDataStats {
+  performance_records: number
+  nonconformances: number
+  customer_complaints: number
+  audit_logs: number
+}
+
+export interface BackupStats {
+  total_records: number
+  auto_backups: number
+  manual_backups: number
+  total_files: number
+  total_size: number
+  orphaned_records: number
+  orphaned_files: number
+  is_synced: boolean
+}
+
+export interface SyncStats {
+  orphaned_records_deleted: number
+  orphaned_files_registered: number
+  errors: string[]
+}
+
+// 백업 관리 API
+export const backupAPI = {
+  // 백업 파일 다운로드 (새로 생성)
+  download: async () => {
+    const response = await api.post('/backup/download/', {}, {
+      responseType: 'blob'
+    })
+    return response
+  },
+
+  // 기존 백업 파일 다운로드
+  downloadFile: async (backupId: number) => {
+    const response = await api.get(`/backup/download/${backupId}/`, {
+      responseType: 'blob'
+    })
+    return response
+  },
+
+  // 백업 파일 업로드 및 복원
+  upload: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post<{ message: string; file_name: string; file_size: number }>(
+      '/backup/upload/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+  },
+
+  // 백업 이력 조회
+  history: () => api.get<BackupRecord[]>('/backup/history/'),
+
+  // 백업 파일 삭제
+  delete: (backupId: number) => api.delete<{ message: string; backup_id: number }>(`/backup/delete/${backupId}/`),
+
+  // 삭제 가능한 데이터 통계 조회
+  archivableStats: () => api.get<ArchivableDataStats>('/backup/archivable-stats/'),
+
+  // 백업 동기화
+  sync: () => api.post<{ message: string; stats: SyncStats }>('/backup/sync/'),
+
+  // 백업 통계 조회
+  stats: () => api.get<BackupStats>('/backup/stats/'),
+}
+
 export default api

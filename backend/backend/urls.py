@@ -28,4 +28,5 @@ urlpatterns = [
     path('api/dashboard/', include('dashboard.urls')),
     path('api/audit/', include('audit.urls')),
     path('api/', include('sticky_notes.urls')),
+    path('api/backup/', include('backup_management.urls')),
 ]

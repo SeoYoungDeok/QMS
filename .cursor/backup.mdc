@@ -1,0 +1,70 @@
+---
+description: 데이터베이스 백업 및 복원 기능을 개발하거나 자동 백업, 데이터 아카이빙 작업을 구현할 때 참고
+globs:
+alwaysApply: false
+---
+
+## 라우트 (URL)
+- `POST /api/backup/download/` - 새 백업 생성 및 다운로드 (실무자 이상)
+- `GET /api/backup/download/{backup_id}/` - 기존 백업 파일 다운로드 (실무자 이상)
+- `POST /api/backup/upload/` - 백업 업로드 및 DB 복원 (실무자 이상, ⚠️ DB 완전 대체)
+- `GET /api/backup/history/` - 백업 이력 조회 (실무자 이상)
+- `DELETE /api/backup/delete/{backup_id}/` - 백업 삭제 (실무자 이상)
+- `POST /api/backup/sync/` - 백업 파일과 DB 레코드 동기화 (실무자 이상)
+- `GET /api/backup/stats/` - 백업 통계 조회 (실무자 이상)
+- `GET /api/backup/archivable-stats/` - 삭제 가능한 오래된 데이터 통계 (실무자 이상)
+
+## 스키마 (모델)
+**BackupRecord**: 백업 파일 메타데이터
+- `backup_date` (DateTimeField) - 백업 일시
+- `file_size` (BigIntegerField) - 파일 크기
+- `backup_type` (CharField) - 'auto' 또는 'manual'
+- `file_path` (CharField) - 백업 파일 경로
+- `created_by` (ForeignKey to User) - 생성자 (자동 백업 시 null)
+- `note` (TextField) - 비고
+
+## 주요 함수
+**backup_utils.py**:
+- `create_backup(backup_type, created_by)` - 백업 파일 생성
+- `restore_backup(backup_file_path)` - 백업 복원 (WAL 처리, 롤백 지원)
+- `cleanup_temp_files()` - 1시간 이상 된 임시 파일 삭제
+- `validate_backup_file(file_path)` - SQLite3 파일 검증
+
+**sync_utils.py**:
+- `sync_backup_records()` - 파일과 DB 레코드 동기화
+- `get_backup_stats()` - 백업 통계 조회
+
+**data_archiver.py**:
+- `archive_old_data()` - 7년 이상 데이터 삭제 (실적/부적합/고객불만), 1년 이상 감사로그 삭제
+- `get_archivable_data_count()` - 삭제 대상 건수 조회
+
+## 자동 작업 스케줄 (APScheduler)
+- **월간 백업**: 매월 1일 00:00 (최신 10개만 유지)
+- **연간 아카이빙**: 매년 1월 1일 00:00 (오래된 데이터 삭제)
+- **일일 임시 파일 정리**: 매일 00:00
+- **주간 작업 기록 정리**: 매주 월요일 00:00
+
+## 프론트엔드
+**페이지**: `/backup` (실무자 이상)
+**주요 기능**:
+1. 백업 생성/다운로드
+2. 백업 복원 (확인 모달)
+3. 백업 통계 (동기화 상태, 불일치 항목)
+4. 백업 이력 (다운로드/삭제 버튼)
+5. 삭제 가능한 데이터 통계
+
+**UI 컴포넌트**: LoadingOverlay, AlertModal, Card, Table, Button, Toaster
+
+## 보안 및 주의사항
+- 권한: 실무자 이상만 접근 (role_level >= 1)
+- 파일 검증: SQLite3 시그니처, 크기 제한 (1GB), 확장자 (.sqlite3)
+- 데이터 안전성: 복원 전 자동 백업, 실패 시 롤백, 재시도 (최대 3회)
+- 임시 파일: 업로드 후 즉시 삭제, 1시간 이상 된 파일 자동 정리
+- 감사 로그: 모든 백업 작업 기록 (DOWNLOAD_BACKUP, UPLOAD_BACKUP, DELETE_BACKUP, SYNC_BACKUP, AUTO_BACKUP, DELETE_OLD_DATA)
+
+## 설정
+```python
+BACKUP_DIR = BASE_DIR / 'backups'  # 백업 디렉토리
+MAX_BACKUP_FILES = 10               # 최대 유지 개수
+TIME_ZONE = 'Asia/Seoul'            # 한국 표준시
+```

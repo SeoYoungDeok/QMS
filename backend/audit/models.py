@@ -61,6 +61,14 @@ class AuditLog(models.Model):
         ('CREATE_KPI_TARGET', 'KPI 목표 등록'),
         ('UPDATE_KPI_TARGET', 'KPI 목표 수정'),
         ('DELETE_KPI_TARGET', 'KPI 목표 삭제'),
+        
+        # 백업 관리
+        ('DOWNLOAD_BACKUP', '백업 다운로드'),
+        ('UPLOAD_BACKUP', '백업 업로드'),
+        ('DELETE_BACKUP', '백업 삭제'),
+        ('SYNC_BACKUP', '백업 동기화'),
+        ('AUTO_BACKUP', '자동 백업 생성'),
+        ('DELETE_OLD_DATA', '오래된 데이터 삭제'),
     ]
     
     # 기획서에 명시된 필수 컬럼들

@@ -13,7 +13,7 @@ alwaysApply: false
 ## 스키마 (모델)
 **AuditLog 모델**: 시스템 감사 로그 관리
 - `user_id` (ForeignKey to User) - 작업 수행자 ID (null 허용)
-- `action` (CharField, 100자) - 수행한 작업 유형 (총 38개 액션)
+- `action` (CharField, 100자) - 수행한 작업 유형 (총 44개 액션)
   - **인증 관련**: LOGIN_SUCCESS, LOGIN_FAILED, SIGNUP, CHANGE_PASSWORD
   - **사용자 관리**: CREATE_USER, UPDATE_USER, DELETE_USER, RESTORE_USER, RESET_PASSWORD, UPDATE_ROLE, UPDATE_STATUS
   - **실적 관리**: CREATE_PERFORMANCE, UPDATE_PERFORMANCE, DELETE_PERFORMANCE, BULK_CREATE_PERFORMANCE, BULK_CREATE_PERFORMANCE_CSV, BULK_DELETE_PERFORMANCE, EXPORT_PERFORMANCE
@@ -21,6 +21,7 @@ alwaysApply: false
   - **일정 관리**: CREATE_SCHEDULE, UPDATE_SCHEDULE, DELETE_SCHEDULE
   - **고객불만 관리**: CREATE_CUSTOMER_COMPLAINT, UPDATE_CUSTOMER_COMPLAINT, DELETE_CUSTOMER_COMPLAINT, EXPORT_CUSTOMER_COMPLAINT
   - **KPI 목표 관리**: CREATE_KPI_TARGET, UPDATE_KPI_TARGET, DELETE_KPI_TARGET
+  - **백업 관리**: DOWNLOAD_BACKUP, UPLOAD_BACKUP, DELETE_BACKUP, SYNC_BACKUP, AUTO_BACKUP, DELETE_OLD_DATA
 - `target_id` (BigIntegerField) - 대상 리소스 ID (null 허용)
 - `details` (TextField) - 상세 정보 (변경 내용, 에러 메시지 등)
 - `ip_address` (CharField, 50자) - 작업 발생 IP 주소

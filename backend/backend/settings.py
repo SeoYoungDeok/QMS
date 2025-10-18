@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
+    'django_apscheduler',
     
     # Local apps
     'accounts',
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
     'kpi_targets',
     'dashboard',
     'sticky_notes',
+    'backup_management',
 ]
 
 MIDDLEWARE = [
@@ -221,3 +223,11 @@ CORS_ALLOW_HEADERS = [
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+
+# 백업 관리 설정
+BACKUP_DIR = BASE_DIR / 'backups'
+MAX_BACKUP_FILES = config('MAX_BACKUP_FILES', default=10, cast=int)
+
+# APScheduler 설정
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+APSCHEDULER_RUN_NOW_TIMEOUT = 25  # 초

@@ -76,6 +76,10 @@ yarn-error.log*
 *.backup
 *.old
 
+# Database backups
+backend/backups/
+*.sqlite3
+
 # Deployment
 /deployment/
 *.pem
