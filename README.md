@@ -213,6 +213,7 @@ start_server.bat
 #### 문서
 | 문서 | 설명 |
 |-------------|------|
+| `DEPLOYMENT_LESSONS_LEARNED.md` | 🎓 **실전 배포 이슈 해결 가이드 (필독!)** |
 | `LIGHTSAIL_DEPLOY.md` | AWS Lightsail 전체 배포 가이드 |
 | `DEPLOY_QUICK_START.md` | 🚀 **빠른 배포 가이드 (자동화 스크립트 사용법)** |
 | `PROD_GUIDE.md` | 프로덕션 환경 일반 가이드 |
