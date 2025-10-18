@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // API 기본 설정
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://www.komex-qc.co.kr/api'
 
 // Axios 인스턴스 생성
 export const api = axios.create({

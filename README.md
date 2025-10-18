@@ -195,12 +195,27 @@ start_server.bat
 | `backup.sh` | 데이터 백업 (로컬 + S3) |
 | `deploy_frontend.sh` | Frontend 빌드 및 서버 업로드 (로컬 PC용) |
 
+#### 배포 스크립트
+| 파일 | 설명 |
+|-------------|------|
+| `deploy_to_production.bat` | 🔥 **Windows용 원클릭 배포 스크립트** |
+| `deploy_to_production.sh` | 🔥 **Linux/Mac용 원클릭 배포 스크립트** |
+| `update_production.sh` | 서버용 업데이트 자동화 스크립트 |
+| `deploy_frontend.sh` | Frontend만 빠르게 배포 |
+
 #### 설정 파일
 | 디렉토리/파일 | 용도 |
 |-------------|------|
 | `systemd/qms-backend.service` | Systemd 서비스 파일 |
 | `nginx/qms.conf` | Nginx 설정 파일 |
 | `.env.production.example` | 프로덕션 환경변수 템플릿 |
+
+#### 문서
+| 문서 | 설명 |
+|-------------|------|
+| `LIGHTSAIL_DEPLOY.md` | AWS Lightsail 전체 배포 가이드 |
+| `DEPLOY_QUICK_START.md` | 🚀 **빠른 배포 가이드 (자동화 스크립트 사용법)** |
+| `PROD_GUIDE.md` | 프로덕션 환경 일반 가이드 |
 
 ### 💡 1GB RAM 인스턴스 배포 팁
 
@@ -222,6 +237,52 @@ sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
+```
+
+## 🚀 자동화된 배포
+
+### 전체 프로덕션 배포 (권장)
+
+로컬에서 빌드 → Git Push → 서버 업로드 → 설정 적용을 자동화:
+
+**Windows:**
+```cmd
+deploy_to_production.bat your-server-ip C:\path\to\key.pem
+```
+
+**Linux/Mac:**
+```bash
+chmod +x deploy_to_production.sh
+./deploy_to_production.sh your-server-ip ~/.ssh/key.pem
+```
+
+**수행 작업:**
+1. Frontend 빌드 (로컬)
+2. Git push
+3. Frontend 파일 서버 업로드
+4. **파일 권한 자동 수정** (SCP 권한 문제 해결)
+5. 서버에서 Git pull
+6. Nginx 설정 자동 업데이트
+7. Backend 의존성 업데이트
+8. DB 마이그레이션
+9. Static 파일 수집
+10. 서비스 재시작
+
+> 💡 **SCP 업로드 후 발생하는 권한 문제를 자동으로 해결합니다!**
+
+### Frontend만 업데이트
+
+```bash
+./deploy_frontend.sh your-server-ip your-key.pem
+```
+
+### 서버에서 수동 업데이트
+
+```bash
+# 서버에 SSH 접속 후
+cd ~/QMS
+git pull
+./update_production.sh
 ```
 
 ---

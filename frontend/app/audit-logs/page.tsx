@@ -139,7 +139,7 @@ export default function AuditLogsPage() {
       if (searchParams.search) params.append('search', searchParams.search)
 
       const response = await fetch(
-        `http://localhost:8000/api/audit/logs/?${params.toString()}`,
+        `/api/audit/logs/?${params.toString()}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

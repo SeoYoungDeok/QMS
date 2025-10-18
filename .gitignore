@@ -1,10 +1,29 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+ENV/
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
+*.egg-info/
 *.egg-info
+.installed.cfg
+*.egg
 
 # Virtual environments
 .venv
@@ -20,16 +39,22 @@ env/
 # Database
 *.sqlite3
 *.db
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
 backend/db.sqlite3*
 
 # Django
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
 /media
 /staticfiles
 /static_root
+staticfiles/
+media/
+backend/staticfiles
+backend/media/
 
 # Node
 node_modules/
@@ -38,9 +63,9 @@ out/
 .npm
 .pnp
 .pnp.js
-
-# backend
-backend/staticfiles
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Frontend build
 frontend/build/
@@ -59,36 +84,41 @@ htmlcov/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # OS
+.DS_Store
 Thumbs.db
 desktop.ini
 
 # Logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Backup files
+# Backup files (민감한 데이터 포함)
 *.bak
 *.backup
 *.old
 
-# Database backups
+# Database backups (절대 Git에 올리면 안됨!)
 backend/backups/
+backups/
 *.sqlite3
 
-# Deployment
+# Deployment & Security (민감한 정보)
 /deployment/
 *.pem
 *.key
 *.crt
+id_rsa*
 
-# User uploads (실제 운영 데이터)
-/backend/media/
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
 
-# Test data (테스트용 CSV는 예외적으로 포함 가능하지만 실제 데이터는 제외)
+# Test data (실제 운영 데이터는 제외)
 # test_*.csv 파일은 현재 포함되어 있지만, 실제 데이터 포함 시 주의
+
+# null 파일 (시스템 오류로 생성된 파일)
 null

@@ -84,7 +84,7 @@ fi
 echo ""
 
 # 3. 서버로 전송
-echo -e "${GREEN}[3/3] 서버로 전송${NC}"
+echo -e "${GREEN}[3/4] 서버로 전송${NC}"
 echo "서버: $SERVER_USER@$SERVER_IP"
 echo "전송 중..."
 
@@ -96,7 +96,17 @@ else
 fi
 echo ""
 
-# 4. Nginx 재시작
+# 4. 권한 수정
+echo -e "${GREEN}[4/4] 권한 설정${NC}"
+echo "권한 설정 중..."
+if ssh -i "$SSH_KEY" "$SERVER_USER@$SERVER_IP" "chmod -R 755 ~/QMS/frontend/out"; then
+    echo -e "${GREEN}✓ 권한 설정 완료${NC}"
+else
+    echo -e "${YELLOW}[경고] 권한 설정 실패 (계속 진행)${NC}"
+fi
+echo ""
+
+# 5. Nginx 재시작
 echo "Nginx 재시작 중..."
 if ssh -i "$SSH_KEY" "$SERVER_USER@$SERVER_IP" "sudo systemctl reload nginx"; then
     echo -e "${GREEN}✓ Nginx 재시작 완료${NC}"
