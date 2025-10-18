@@ -18,6 +18,12 @@ interface MenuItem {
   minRole: number
 }
 
+interface MenuGroup {
+  id: string
+  label?: string
+  items: MenuItem[]
+}
+
 export default function Sidebar() {
   const { user, logout, setUser } = useAuth()
   const router = useRouter()
@@ -43,127 +49,161 @@ export default function Sidebar() {
     type?: 'info' | 'warning' | 'error' | 'success'
   }>({ isOpen: false, message: '' })
 
-  const menuItems: MenuItem[] = [
+  const menuGroups: MenuGroup[] = [
+    // 그룹 1: 대시보드
     {
-      id: 'dashboard',
-      name: '대시보드',
-      path: '/',
-      minRole: 0,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
+      id: 'dashboard-group',
+      items: [
+        {
+          id: 'dashboard',
+          name: '대시보드',
+          path: '/',
+          minRole: 0,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          ),
+        },
+      ],
     },
+    // 그룹 2: 품질 관리
     {
-      id: 'performance',
-      name: '실적 관리',
-      path: '/performance',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
+      id: 'quality-management',
+      label: '품질 관리',
+      items: [
+        {
+          id: 'kpi-targets',
+          name: 'KPI 목표 관리',
+          path: '/kpi-targets',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'performance',
+          name: '실적 관리',
+          path: '/performance',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'nonconformance',
+          name: '부적합 관리 (NCR)',
+          path: '/nonconformance',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'customer-complaints',
+          name: '고객 불만 (CCR)',
+          path: '/customer-complaints',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          ),
+        },
+      ],
     },
+    // 그룹 3: 협업 도구
     {
-      id: 'nonconformance',
-      name: '부적합 관리 (NCR)',
-      path: '/nonconformance',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      ),
+      id: 'collaboration-tools',
+      label: '협업 도구',
+      items: [
+        {
+          id: 'schedules',
+          name: '일정 관리',
+          path: '/schedules',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'sticky-notes',
+          name: '포스트잇 보드',
+          path: '/sticky-notes',
+          minRole: 0,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          ),
+        },
+      ],
     },
+    // 그룹 4: 데이터
     {
-      id: 'customer-complaints',
-      name: '고객 불만 (CCR)',
-      path: '/customer-complaints',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-      ),
+      id: 'data-group',
+      label: '데이터',
+      items: [
+        {
+          id: 'data-download',
+          name: '데이터 다운로드',
+          path: '/data-download',
+          minRole: 0,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          ),
+        },
+      ],
     },
+    // 그룹 5: 시스템 관리
     {
-      id: 'schedules',
-      name: '일정 관리',
-      path: '/schedules',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'kpi-targets',
-      name: 'KPI 목표 관리',
-      path: '/kpi-targets',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'data-download',
-      name: '데이터 다운로드',
-      path: '/data-download',
-      minRole: 0,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      ),
-    },
-    {
-      id: 'sticky-notes',
-      name: '포스트잇 보드',
-      path: '/sticky-notes',
-      minRole: 0,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-        </svg>
-      ),
-    },
-    {
-      id: 'users',
-      name: '사용자 관리',
-      path: '/admin/users',
-      minRole: 2,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'audit-logs',
-      name: '감사 로그',
-      path: '/audit-logs',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'backup',
-      name: '백업 관리',
-      path: '/backup',
-      minRole: 1,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-        </svg>
-      ),
+      id: 'system-management',
+      label: '시스템 관리',
+      items: [
+        {
+          id: 'users',
+          name: '사용자 관리',
+          path: '/admin/users',
+          minRole: 2,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'audit-logs',
+          name: '감사 로그',
+          path: '/audit-logs',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          ),
+        },
+        {
+          id: 'backup',
+          name: '백업 관리',
+          path: '/backup',
+          minRole: 1,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+            </svg>
+          ),
+        },
+      ],
     },
   ]
 
@@ -386,39 +426,60 @@ export default function Sidebar() {
 
           {/* 메뉴 항목 */}
           <nav className="flex-1 overflow-y-auto py-4">
-            <ul className="space-y-1 px-3">
-              {menuItems.map((item) => {
-                const hasAccess = user && user.role_level >= item.minRole
-                const active = isActive(item.path)
+            <div className="px-3 space-y-4">
+              {menuGroups.map((group, groupIndex) => (
+                <div key={group.id}>
+                  {/* 그룹 라벨 (있는 경우만 표시) */}
+                  {group.label && !isCollapsed && (
+                    <div className="px-3 mb-2">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {group.label}
+                      </h3>
+                    </div>
+                  )}
+                  
+                  {/* 메뉴 아이템 */}
+                  <ul className="space-y-1">
+                    {group.items.map((item) => {
+                      const hasAccess = user && user.role_level >= item.minRole
+                      const active = isActive(item.path)
 
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => handleMenuClick(item)}
-                      disabled={!hasAccess}
-                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all ${
-                        active
-                          ? 'bg-[var(--accent-primary)] text-white'
-                          : hasAccess
-                          ? 'text-[var(--text-primary)] hover:bg-gray-100'
-                          : 'text-gray-400 cursor-not-allowed opacity-50'
-                      } ${isCollapsed ? 'justify-center' : ''}`}
-                      title={isCollapsed ? item.name : ''}
-                    >
-                      <span className="flex-shrink-0">{item.icon}</span>
-                      {!isCollapsed && (
-                        <span className="text-sm font-medium truncate">{item.name}</span>
-                      )}
-                      {!isCollapsed && !hasAccess && (
-                        <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+                      return (
+                        <li key={item.id}>
+                          <button
+                            onClick={() => handleMenuClick(item)}
+                            disabled={!hasAccess}
+                            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all ${
+                              active
+                                ? 'bg-[var(--accent-primary)] text-white'
+                                : hasAccess
+                                ? 'text-[var(--text-primary)] hover:bg-gray-100'
+                                : 'text-gray-400 cursor-not-allowed opacity-50'
+                            } ${isCollapsed ? 'justify-center' : ''}`}
+                            title={isCollapsed ? item.name : ''}
+                          >
+                            <span className="flex-shrink-0">{item.icon}</span>
+                            {!isCollapsed && (
+                              <span className="text-sm font-medium truncate">{item.name}</span>
+                            )}
+                            {!isCollapsed && !hasAccess && (
+                              <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            )}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+
+                  {/* 그룹 구분선 (마지막 그룹이 아닌 경우) */}
+                  {groupIndex < menuGroups.length - 1 && (
+                    <div className={`mt-4 ${isCollapsed ? 'mx-auto w-8' : 'mx-3'} border-t border-gray-200`} />
+                  )}
+                </div>
+              ))}
+            </div>
           </nav>
 
           {/* 로그아웃 버튼 */}
