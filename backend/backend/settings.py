@@ -219,14 +219,24 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# CSRF 신뢰 출처 (도메인 사용 시 필수)
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+
 # 보안 설정 (운영 환경)
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if not DEBUG else None
 
 # 백업 관리 설정
 BACKUP_DIR = BASE_DIR / 'backups'
 MAX_BACKUP_FILES = config('MAX_BACKUP_FILES', default=10, cast=int)
+
+# AWS S3 백업 설정 (선택사항)
+AWS_S3_BACKUP_BUCKET = config('AWS_S3_BACKUP_BUCKET', default='')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_DEFAULT_REGION = config('AWS_DEFAULT_REGION', default='ap-northeast-2')
 
 # APScheduler 설정
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"

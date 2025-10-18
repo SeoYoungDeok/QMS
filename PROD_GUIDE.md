@@ -1,30 +1,82 @@
 # QMS 운영 환경 배포 가이드
 
-Windows PC에서 프로덕션 환경으로 배포하기 위한 가이드입니다.
+이 가이드는 Windows PC 및 Linux 서버 환경에서 QMS를 프로덕션으로 배포하는 방법을 설명합니다.
+
+> **클라우드 배포 안내**: AWS Lightsail Ubuntu 24.04 배포는 [LIGHTSAIL_DEPLOY.md](LIGHTSAIL_DEPLOY.md)를 참조하세요.
+
+---
+
+## 환경별 가이드
+
+- **Windows PC 배포**: 이 문서
+- **AWS Lightsail (Ubuntu)**: [LIGHTSAIL_DEPLOY.md](LIGHTSAIL_DEPLOY.md)
+- **개발 환경**: [DEV_GUIDE.md](DEV_GUIDE.md)
 
 ---
 
 ## 1. 시스템 요구사항
 
-### Hardware
+### 플랫폼별 요구사항
+
+#### Windows PC
+- Windows 10/11 (64비트)
+- Python 3.13+
+- Node.js 20.x+
+- uv 패키지 매니저
+
+#### Linux (Ubuntu/Debian)
+- Ubuntu 24.04 LTS 또는 Debian 12+
+- Python 3.13+
+- Node.js 20.x+
+- uv 패키지 매니저
+- Nginx (프로덕션 배포 시)
+
+### 하드웨어 요구사항
 - **CPU**: 2코어 이상 (4코어 권장)
 - **RAM**: 4GB 이상 (8GB 권장)
 - **디스크**: 10GB 이상 여유 공간
 
-### Software
+### 소프트웨어 설치
+
+#### Windows
 | 소프트웨어 | 버전 | 설치 방법 |
 |-----------|------|----------|
 | Python | 3.13+ | https://www.python.org/downloads/ |
 | Node.js | 20.x+ | https://nodejs.org/ |
-| uv | latest | `irm https://astral.sh/uv/install.ps1 \| iex` |
+| uv | latest | PowerShell: `irm https://astral.sh/uv/install.ps1 \| iex` |
 | Git | latest | https://git-scm.com/ |
+
+#### Linux (Ubuntu/Debian)
+```bash
+# 시스템 업데이트
+sudo apt update && sudo apt upgrade -y
+
+# Python 3.13
+sudo apt install -y python3 python3-pip python3-venv
+
+# Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Git
+sudo apt install -y git
+
+# Nginx (프로덕션 배포 시)
+sudo apt install -y nginx
+```
 
 ---
 
-## 2. 초기 배포
+## 2. 초기 배포 (Windows)
+
+> **Linux 배포**: Linux 환경은 [LIGHTSAIL_DEPLOY.md](LIGHTSAIL_DEPLOY.md)를 참조하세요.
 
 ### 2.1 프로젝트 다운로드
 
+#### Windows
 ```cmd
 REM Git 사용
 git clone <repository-url>
@@ -34,11 +86,25 @@ REM 또는 파일 복사
 REM USB/네트워크에서 qms 폴더 복사
 ```
 
+#### Linux
+```bash
+# Git 사용
+git clone <repository-url>
+cd qms
+```
+
 ### 2.2 환경 변수 설정
 
+#### Windows
 ```cmd
 copy .env.example .env
 notepad .env
+```
+
+#### Linux
+```bash
+cp .env.production.example .env
+nano .env
 ```
 
 **필수 수정 사항**:
@@ -70,12 +136,19 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 
 ### 2.3 자동 배포 실행
 
+#### Windows
 ```cmd
 deploy.bat
 ```
 
+#### Linux
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
 이 스크립트가 자동으로 수행:
-1. Python 의존성 설치 (Uvicorn, WhiteNoise 포함)
+1. Python 의존성 설치 (Uvicorn, WhiteNoise, boto3 포함)
 2. 데이터베이스 마이그레이션
 3. SQLite WAL 모드 활성화
 4. Static 파일 수집
@@ -83,8 +156,15 @@ deploy.bat
 
 ### 2.4 관리자 계정 생성
 
+#### Windows
 ```cmd
 create_admin.bat
+```
+
+#### Linux
+```bash
+cd backend
+uv run python create_admin.py
 ```
 
 프롬프트에 따라 관리자 정보 입력.
@@ -100,6 +180,7 @@ uv run manage.py seed_defect_data
 
 ### 3.1 프로덕션 서버 시작
 
+#### Windows (로컬 PC)
 ```cmd
 start_server.bat
 ```
@@ -108,15 +189,36 @@ start_server.bat
 - **Backend (Uvicorn ASGI)**: 포트 8000
 - **Frontend (Next.js)**: 포트 3000
 
+#### Linux (Systemd 서비스)
+```bash
+# Systemd 서비스 등록 (최초 1회)
+sudo cp systemd/qms-backend.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable qms-backend
+
+# 서비스 시작
+sudo systemctl start qms-backend
+
+# 상태 확인
+sudo systemctl status qms-backend
+```
+
 **참고**: Uvicorn은 Windows, Linux, macOS 모두에서 작동합니다.
 
 ### 3.2 서버 중지
 
+#### Windows
 ```cmd
 stop_server.bat
 ```
-
 또는 각 서버 창에서 `Ctrl+C`
+
+#### Linux
+```bash
+sudo systemctl stop qms-backend
+# 또는
+./stop_server.sh
+```
 
 ---
 
@@ -154,15 +256,21 @@ netsh advfirewall firewall add rule name="QMS Frontend" dir=in action=allow prot
 
 ### 6.1 수동 백업
 
+#### Windows
 ```cmd
 backup.bat
 ```
+백업 위치: `backend\backups\`
 
-백업 위치: `backups\YYYYMMDD_HHMMSS\`
+#### Linux
+```bash
+./backup.sh
+```
+백업 위치: `backend/backups/` (로컬) + S3 (설정 시)
 
 ### 6.2 자동 백업 설정
 
-**Windows 작업 스케줄러**:
+#### Windows 작업 스케줄러
 
 1. `Win + R` → `taskschd.msc`
 2. **기본 작업 만들기**
@@ -171,12 +279,35 @@ backup.bat
    - 작업: 프로그램 시작
    - 프로그램: `C:\path\to\qms\backup.bat`
 
+#### Linux Cron
+
+```bash
+# Crontab 편집
+crontab -e
+
+# 매일 오전 2시 백업 (아래 줄 추가)
+0 2 * * * /home/ubuntu/QMS/backup.sh >> /home/ubuntu/QMS/backend/logs/backup.log 2>&1
+```
+
+### 6.3 S3 백업 (Linux/클라우드 환경)
+
+`.env` 파일에 S3 설정 추가:
+```env
+AWS_S3_BACKUP_BUCKET=your-qms-backup-bucket
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_DEFAULT_REGION=ap-northeast-2
+```
+
+백업 스크립트(`backup.sh`)가 자동으로 S3에 업로드합니다.
+
 ---
 
 ## 7. 시스템 업데이트
 
 ### 코드 업데이트
 
+#### Windows
 ```cmd
 REM 1. 서버 중지
 stop_server.bat
@@ -194,30 +325,76 @@ REM 5. 서버 시작
 start_server.bat
 ```
 
+#### Linux
+```bash
+# 1. 백업
+./backup.sh
+
+# 2. 코드 업데이트
+git pull origin main
+
+# 3. 재배포
+./deploy.sh
+
+# 4. 서비스 재시작
+sudo systemctl restart qms-backend
+sudo systemctl reload nginx
+```
+
 ---
 
 ## 8. 모니터링
 
 ### 8.1 로그 확인
 
-**Uvicorn 로그**:
-Uvicorn은 콘솔에 직접 로그를 출력합니다. 필요시 리다이렉션으로 파일 저장:
+#### Windows
+Uvicorn은 콘솔에 직접 로그를 출력합니다.
 ```cmd
-# 콘솔에서 로그 확인
-# 또는 start_server.bat 실행 시 자동으로 콘솔에 표시됨
+# start_server.bat 실행 시 자동으로 콘솔에 표시됨
+```
+
+#### Linux
+```bash
+# Systemd 서비스 로그 (실시간)
+sudo journalctl -u qms-backend -f
+
+# 최근 100줄
+sudo journalctl -u qms-backend -n 100
+
+# Nginx 로그
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
 ```
 
 ### 8.2 시스템 상태
 
-**서버 상태 확인**:
+#### Windows
 ```cmd
+# 포트 확인
 netstat -ano | findstr :8000
 netstat -ano | findstr :3000
+
+# 작업 관리자
+# Ctrl + Shift + Esc
 ```
 
-**작업 관리자**:
-- `Ctrl + Shift + Esc`
-- Python 프로세스 확인 (워커 수 = CPU * 2 + 1)
+#### Linux
+```bash
+# 서비스 상태
+sudo systemctl status qms-backend
+sudo systemctl status nginx
+
+# 포트 확인
+sudo ss -tlnp | grep :8000
+
+# 프로세스 확인
+ps aux | grep uvicorn
+
+# 시스템 리소스
+htop  # 또는 top
+df -h  # 디스크
+free -h  # 메모리
+```
 
 ---
 

@@ -30,8 +30,8 @@ QMS는 제조 및 서비스 기업의 품질 관리를 위한 종합 시스템�
 - 품질 지표 추적 및 개선 활동 지원
 
 ### 사용 환경
-- **배포**: Windows PC (사내 배포)
-- **접근**: 로컬 네트워크
+- **배포**: Windows PC (사내), AWS Lightsail (클라우드)
+- **접근**: 로컬 네트워크 또는 인터넷
 - **사용자**: 사내 품질 관리팀
 
 ---
@@ -83,13 +83,15 @@ QMS는 제조 및 서비스 기업의 품질 관리를 위한 종합 시스템�
 ### Backend
 - **Framework**: Django 5.2.5
 - **API**: Django REST Framework 3.16.1
-- **ASGI Server**: Uvicorn 0.34+ (프로덕션, Windows 호환)
+- **ASGI Server**: Uvicorn 0.34+ (Windows/Linux 모두 지원)
 - **인증**: JWT (Simple JWT 5.5.1)
 - **데이터베이스**: SQLite3 (WAL 모드)
 - **Static**: WhiteNoise 6.8+
+- **백업**: boto3 (AWS S3 지원)
 
 ### Frontend
 - **Framework**: Next.js 15.4.6 (React 19.1.0)
+- **배포**: Static Export (Nginx 서빙)
 - **언어**: TypeScript 5.9.3
 - **스타일링**: Tailwind CSS 3.4.17
 - **HTTP**: Axios 1.11.0
@@ -142,7 +144,8 @@ start_server.bat
 | 문서 | 용도 | 대상 |
 |-----|------|------|
 | **[DEV_GUIDE.md](DEV_GUIDE.md)** | 개발 환경 설정 및 유지보수 | 개발자 |
-| **[PROD_GUIDE.md](PROD_GUIDE.md)** | 운영 환경 배포 및 관리 | 관리자 |
+| **[PROD_GUIDE.md](PROD_GUIDE.md)** | Windows PC 배포 및 관리 | 관리자 |
+| **[LIGHTSAIL_DEPLOY.md](LIGHTSAIL_DEPLOY.md)** | AWS Lightsail Ubuntu 배포 가이드 | 관리자/DevOps |
 
 ### 상세 문서
 
@@ -153,26 +156,50 @@ start_server.bat
 
 ## 🔧 스크립트
 
-### 초기 설정
+### Windows 스크립트
 
+#### 초기 설정
 | 스크립트 | 용도 |
 |---------|------|
 | `deploy.bat` | 초기 배포 및 업데이트 (의존성, 마이그레이션, 빌드) |
 | `create_admin.bat` | 관리자 계정 생성 |
 
-### 서버 관리
-
+#### 서버 관리
 | 스크립트 | 용도 |
 |---------|------|
 | `start_server.bat` | 서버 시작 (Uvicorn + Next.js) |
 | `stop_server.bat` | 서버 중지 |
 
-### 유지보수
-
+#### 유지보수
 | 스크립트 | 용도 |
 |---------|------|
-| `backup.bat` | 데이터 백업 (DB, .env, media) |
+| `backup.bat` | 데이터 백업 |
 | `update_system.bat` | Git pull → 재배포 |
+
+### Linux 스크립트
+
+#### 초기 설정
+| 스크립트 | 용도 |
+|---------|------|
+| `deploy.sh` | 초기 배포 및 업데이트 (의존성, 마이그레이션, 빌드) |
+
+#### 서버 관리
+| 스크립트 | 용도 |
+|---------|------|
+| `start_server.sh` | 서버 시작 (또는 systemd 서비스) |
+| `stop_server.sh` | 서버 중지 |
+
+#### 유지보수
+| 스크립트 | 용도 |
+|---------|------|
+| `backup.sh` | 데이터 백업 (로컬 + S3) |
+
+#### 설정 파일
+| 디렉토리/파일 | 용도 |
+|-------------|------|
+| `systemd/qms-backend.service` | Systemd 서비스 파일 |
+| `nginx/qms.conf` | Nginx 설정 파일 |
+| `.env.production.example` | 프로덕션 환경변수 템플릿 |
 
 ---
 

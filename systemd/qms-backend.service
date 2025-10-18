@@ -1,0 +1,37 @@
+[Unit]
+Description=QMS Backend (Django + Uvicorn ASGI Server)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/QMS/backend
+Environment="PATH=/home/ubuntu/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+
+# 환경변수 파일 로드
+EnvironmentFile=/home/ubuntu/QMS/.env
+
+# Uvicorn 실행
+ExecStart=/home/ubuntu/.cargo/bin/uv run uvicorn backend.asgi:application --host 0.0.0.0 --port 8000 --workers 2 --log-level info
+
+# 재시작 설정
+Restart=always
+RestartSec=10
+
+# 로그 설정
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=qms-backend
+
+# 보안 설정
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 리소스 제한 (1GB RAM 인스턴스용)
+MemoryLimit=512M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target
+
