@@ -215,7 +215,57 @@ cd ~/QMS/backend
 python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-### 5.3 배포 스크립트 실행
+### 5.3 Frontend 빌드 (중요!)
+
+⚠️ **1GB RAM 인스턴스에서는 Next.js 빌드가 메모리 부족으로 실패할 수 있습니다.**
+
+**권장 방법: 로컬 PC에서 빌드 후 업로드**
+
+**옵션 A: 자동 스크립트 사용 (간단)**
+```bash
+# 로컬 PC에서 실행 (Git Bash 또는 WSL)
+cd C:\QMS
+./deploy_frontend.sh your-server-ip C:\path\to\your-key.pem
+
+# 예시:
+# ./deploy_frontend.sh 54.180.123.45 ~/.ssh/lightsail-key.pem
+```
+
+이 스크립트가 자동으로:
+1. Frontend 의존성 설치 확인
+2. Next.js 빌드
+3. 서버로 전송
+4. Nginx 재시작
+
+**옵션 B: 수동 빌드 및 전송**
+```bash
+# 로컬 PC (Windows)에서 실행
+cd C:\QMS\frontend
+npm install
+npm run build
+
+# 빌드 완료 확인
+dir out  # out 폴더가 생성됨
+
+# 서버로 전송
+scp -i "C:\path\to\your-key.pem" -r out ubuntu@your-server-ip:~/QMS/frontend/
+```
+
+**대안: 서버에서 빌드 (Swap 메모리 필요)**
+
+```bash
+# 서버에서 Swap 메모리 추가
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 메모리 확인
+free -h
+```
+
+### 5.4 배포 스크립트 실행
 
 ```bash
 cd ~/QMS
@@ -230,9 +280,9 @@ chmod +x deploy.sh
 - 데이터베이스 마이그레이션
 - SQLite WAL 모드 활성화
 - Static 파일 수집
-- Frontend 빌드 (Static Export)
+- **Frontend 빌드 확인** (이미 빌드된 경우 건너뜀)
 
-### 5.4 관리자 계정 생성
+### 5.5 관리자 계정 생성
 
 ```bash
 cd ~/QMS/backend
@@ -243,7 +293,17 @@ uv run python create_admin.py
 
 ## 6. Nginx 설정
 
-### 6.1 Nginx 설정 파일 복사
+### 6.1 Frontend 빌드 파일 확인
+
+배포 스크립트 실행 전에 Frontend가 빌드되었는지 확인:
+
+```bash
+ls -la ~/QMS/frontend/out/
+```
+
+`out` 폴더가 없다면 위의 5.3 단계로 돌아가서 빌드하세요.
+
+### 6.2 Nginx 설정 파일 복사
 
 ```bash
 cd ~/QMS
@@ -262,7 +322,7 @@ sudo ln -s /etc/nginx/sites-available/qms /etc/nginx/sites-enabled/
 sudo rm /etc/nginx/sites-enabled/default
 ```
 
-### 6.2 Nginx 설정 테스트 및 재시작
+### 6.3 Nginx 설정 테스트 및 재시작
 
 ```bash
 # 설정 파일 문법 검사
@@ -275,7 +335,7 @@ sudo systemctl restart nginx
 sudo systemctl status nginx
 ```
 
-### 6.3 접속 테스트
+### 6.4 접속 테스트
 
 브라우저에서 `http://your-domain.com` 접속
 - Frontend가 보이면 성공
@@ -470,6 +530,7 @@ aws s3 ls s3://your-company-qms-backup/backups/
 
 ### 10.4 업데이트 절차
 
+**방법 1: 소스 코드만 변경된 경우**
 ```bash
 # 1. 백업
 cd ~/QMS
@@ -478,10 +539,46 @@ cd ~/QMS
 # 2. 코드 업데이트 (Git 사용 시)
 git pull origin main
 
-# 3. 재배포
-./deploy.sh
+# 3. Backend 재배포
+cd backend
+uv sync
+uv run python manage.py migrate
+uv run python manage.py collectstatic --noinput
 
 # 4. 서비스 재시작
+sudo systemctl restart qms-backend
+sudo systemctl reload nginx
+```
+
+**방법 2: Frontend 변경된 경우 (로컬 빌드)**
+```bash
+# 로컬 PC에서:
+cd C:\QMS\frontend
+git pull
+npm install
+npm run build
+scp -i your-key.pem -r out ubuntu@your-server-ip:~/QMS/frontend/
+
+# 서버에서:
+sudo systemctl reload nginx
+```
+
+**방법 3: 전체 재배포 (서버 빌드 - 느림)**
+```bash
+# 1. 백업
+cd ~/QMS
+./backup.sh
+
+# 2. 코드 업데이트
+git pull origin main
+
+# 3. Frontend 빌드 파일 삭제 (서버에서 재빌드하려면)
+rm -rf frontend/out
+
+# 4. 재배포
+./deploy.sh
+
+# 5. 서비스 재시작
 sudo systemctl restart qms-backend
 sudo systemctl reload nginx
 ```
@@ -552,7 +649,61 @@ sudo systemctl reload nginx
 sudo certbot certificates
 ```
 
-### 11.5 S3 업로드 실패
+### 11.5 Frontend 빌드 실패 (메모리 부족)
+
+**증상:** Next.js 빌드 중 멈추거나 `JavaScript heap out of memory` 오류
+
+**해결 방법 1: 로컬에서 빌드 후 업로드 (권장)**
+```bash
+# 로컬 PC에서
+cd C:\QMS\frontend
+npm run build
+
+# 서버로 전송
+scp -i your-key.pem -r out ubuntu@your-server-ip:~/QMS/frontend/
+
+# 서버에서 배포 재실행
+ssh ubuntu@your-server-ip
+cd ~/QMS
+./deploy.sh
+```
+
+**해결 방법 2: Swap 메모리 추가**
+```bash
+# 2GB Swap 파일 생성
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 영구 설정
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 확인
+free -h
+
+# 빌드 재시도
+cd ~/QMS
+./deploy.sh
+```
+
+**해결 방법 3: 빌드된 파일만 Git으로 업로드 (비권장)**
+```bash
+# 로컬 PC에서 빌드 후
+cd frontend
+npm run build
+
+# Git에 임시로 추가 (주의: .gitignore 무시)
+git add -f out/
+git commit -m "Add build files temporarily"
+git push
+
+# 서버에서
+cd ~/QMS
+git pull
+```
+
+### 11.6 S3 업로드 실패
 
 **확인:**
 ```bash
@@ -570,7 +721,7 @@ cd ~/QMS
 ./deploy.sh
 ```
 
-### 11.6 데이터베이스 복구
+### 11.7 데이터베이스 복구
 
 **S3에서 백업 다운로드:**
 ```bash
@@ -584,7 +735,7 @@ cp db_backup_20250118_020000.sqlite3 ~/QMS/backend/db.sqlite3
 sudo systemctl start qms-backend
 ```
 
-### 11.7 포트 충돌
+### 11.8 포트 충돌
 
 ```bash
 # 8000 포트 사용 확인

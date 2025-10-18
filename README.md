@@ -193,6 +193,7 @@ start_server.bat
 | 스크립트 | 용도 |
 |---------|------|
 | `backup.sh` | 데이터 백업 (로컬 + S3) |
+| `deploy_frontend.sh` | Frontend 빌드 및 서버 업로드 (로컬 PC용) |
 
 #### 설정 파일
 | 디렉토리/파일 | 용도 |
@@ -200,6 +201,28 @@ start_server.bat
 | `systemd/qms-backend.service` | Systemd 서비스 파일 |
 | `nginx/qms.conf` | Nginx 설정 파일 |
 | `.env.production.example` | 프로덕션 환경변수 템플릿 |
+
+### 💡 1GB RAM 인스턴스 배포 팁
+
+Next.js 빌드는 메모리를 많이 사용합니다. 1GB RAM Lightsail 인스턴스에서는:
+
+**권장 방법: 로컬 빌드**
+```bash
+# 로컬 PC에서
+cd frontend && npm run build
+
+# 서버로 전송 (자동 스크립트)
+./deploy_frontend.sh your-server-ip your-key.pem
+```
+
+**대안: Swap 메모리 추가**
+```bash
+# 서버에서
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
 
 ---
 

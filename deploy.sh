@@ -115,14 +115,82 @@ npm install
 echo ""
 
 # Frontend 빌드 (Static Export)
-echo -e "${GREEN}[11/12] Frontend 빌드 (Static Export)${NC}"
-npm run build
+echo -e "${GREEN}[11/12] Frontend 빌드 확인${NC}"
+
 if [ -d "out" ]; then
-    echo "Static export 완료: frontend/out/"
+    echo "✓ Frontend 빌드가 이미 존재합니다: frontend/out/"
+    echo "  (로컬에서 빌드 후 업로드된 파일)"
+    
+    # 빌드 파일 개수 확인
+    FILE_COUNT=$(find out -type f | wc -l)
+    echo "  빌드 파일 수: $FILE_COUNT"
 else
-    echo -e "${RED}[오류] Static export 실패${NC}"
-    exit 1
+    echo -e "${YELLOW}Frontend 빌드 파일이 없습니다.${NC}"
+    echo ""
+    echo "=========================================="
+    echo "메모리가 1GB인 인스턴스에서는 빌드가 실패할 수 있습니다."
+    echo "=========================================="
+    echo ""
+    echo "권장 방법: 로컬 PC에서 빌드 후 업로드"
+    echo ""
+    echo "1. 로컬 PC에서 빌드:"
+    echo "   cd frontend"
+    echo "   npm install"
+    echo "   npm run build"
+    echo ""
+    echo "2. 서버로 전송 (로컬 PC에서):"
+    echo "   scp -i your-key.pem -r out ubuntu@your-server-ip:~/QMS/frontend/"
+    echo ""
+    echo "3. 배포 스크립트 재실행:"
+    echo "   ./deploy.sh"
+    echo ""
+    read -p "서버에서 직접 빌드를 시도하시겠습니까? (y/N): " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "서버에서 빌드 시작..."
+        echo -e "${YELLOW}⚠️  메모리 부족 시 Swap 메모리를 추가하세요:${NC}"
+        echo "   sudo fallocate -l 2G /swapfile"
+        echo "   sudo chmod 600 /swapfile"
+        echo "   sudo mkswap /swapfile"
+        echo "   sudo swapon /swapfile"
+        echo ""
+        
+        # Node.js 메모리 제한 설정 (1GB 인스턴스용)
+        export NODE_OPTIONS="--max-old-space-size=768"
+        
+        if timeout 900 npm run build; then
+            echo -e "${GREEN}✓ Static export 완료: frontend/out/${NC}"
+        else
+            echo ""
+            echo -e "${RED}[오류] Frontend 빌드 실패${NC}"
+            echo ""
+            echo "다음 방법을 시도하세요:"
+            echo ""
+            echo "1. Swap 메모리 추가 후 재시도:"
+            echo "   sudo fallocate -l 2G /swapfile"
+            echo "   sudo chmod 600 /swapfile"
+            echo "   sudo mkswap /swapfile"
+            echo "   sudo swapon /swapfile"
+            echo "   ./deploy.sh"
+            echo ""
+            echo "2. 로컬에서 빌드 후 업로드 (권장):"
+            echo "   # 로컬 PC에서:"
+            echo "   cd frontend && npm run build"
+            echo "   scp -r out ubuntu@your-server:~/QMS/frontend/"
+            echo ""
+            exit 1
+        fi
+    else
+        echo ""
+        echo -e "${YELLOW}빌드를 건너뜁니다.${NC}"
+        echo "로컬에서 빌드 후 out 폴더를 업로드한 다음 다시 실행하세요."
+        echo ""
+        exit 1
+    fi
 fi
+
 cd "$PROJECT_ROOT"
 echo ""
 
